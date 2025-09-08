@@ -24,7 +24,6 @@ void UPlayerHUDWidget::NativeConstruct()
 	ACPPSurvivalCharacter* PlayerCharacter = Cast<ACPPSurvivalCharacter>(GetOwningPlayerPawn());
 	if (PlayerCharacter)
 	{
-		// Find the SurvivalStatsComponent on the character
 		USurvivalStatsComponent* StatsComponent = PlayerCharacter->GetSurvivalStatsComponent();
 		if (StatsComponent)
 		{
@@ -34,8 +33,7 @@ void UPlayerHUDWidget::NativeConstruct()
 			UpdateHunger(StatsComponent->GetCurrentHunger(), StatsComponent->GetMaxHunger());
 			UpdateThirst(StatsComponent->GetCurrentThirst(), StatsComponent->GetMaxThirst());
 		}
-
-		// Initialize Main Inventory
+		
 		if (InventoryContainerWidget)
 		{
 			UInventoryGridWidget* Grid = InventoryContainerWidget->GetInventoryGridWidget();
@@ -47,7 +45,6 @@ void UPlayerHUDWidget::NativeConstruct()
 			}
 		}
 		
-		// Initialize Hotbar
 		if(HotbarWidget)
 		{
 			UHotbarComponent* HotbarComponent = PlayerCharacter->GetHotbarComponent();
@@ -107,8 +104,14 @@ bool UPlayerHUDWidget::NativeOnDrop(const FGeometry& InGeometry, const FDragDrop
 			if (UInventoryComponent* InventoryComp = Cast<UInventoryComponent>(ContainerComp))
 			{
 				InventoryComp->DropItem(InventoryOperation->SourceSlotIndex, QuantityToDrop);
+				return true;
 			}
-			return true;
+			
+			if (UHotbarComponent* HotbarComp = Cast<UHotbarComponent>(ContainerComp))
+			{
+				HotbarComp->DropItem(InventoryOperation->SourceSlotIndex, QuantityToDrop);
+				return true;
+			}
 		}
 	}
 

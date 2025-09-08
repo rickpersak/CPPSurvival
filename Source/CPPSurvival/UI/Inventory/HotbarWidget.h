@@ -46,8 +46,7 @@ protected:
 	// The widget class to use for hotbar slots
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI")
 	TSubclassOf<UInventorySlotWidget> SlotWidgetClass;
-
-	// Number of slots in the hotbar (typically 10 or 12)
+	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI", meta = (ClampMin = "1"))
-	int32 HotbarSlots = 10;
+	int32 HotbarSlots = 9;
 };

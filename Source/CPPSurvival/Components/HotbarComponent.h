@@ -1,6 +1,4 @@
-﻿// Copyright Epic Games, Inc. All Rights Reserved.
-
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "Components/ContainerComponent.h"
@@ -16,6 +14,15 @@ class CPPSURVIVAL_API UHotbarComponent : public UContainerComponent
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this component's properties
+
 	UHotbarComponent();
+	
+	virtual void BeginPlay() override;
+
+	UFUNCTION(BlueprintCallable, Category = "Hotbar")
+	void DropItem(int32 Index, int32 Quantity);
+	
+protected:
+	UFUNCTION(Server, Reliable)
+	void Server_DropItem(int32 Index, int32 Quantity);
 };
