@@ -1,7 +1,9 @@
 ﻿#include "UI/Game/PlayerHUDWidget.h"
 #include "UI/Game/InventoryContainerWidget.h"
 #include "UI/Inventory/InventoryGridWidget.h"
+#include "UI/Inventory/HotbarWidget.h"
 #include "Components/InventoryComponent.h"
+#include "Components/HotbarComponent.h"
 #include "Components/SurvivalStatsComponent.h"
 #include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
@@ -9,7 +11,6 @@
 #include "Characters/CPPSurvivalCharacter.h"
 #include "Blueprint/DragDropOperation.h"
 #include "UI/Inventory/InventoryDragDropOperation.h"
-#include "Components/InventoryComponent.h"
 
 void UPlayerHUDWidget::NativeConstruct()
 {
@@ -34,15 +35,26 @@ void UPlayerHUDWidget::NativeConstruct()
 			UpdateThirst(StatsComponent->GetCurrentThirst(), StatsComponent->GetMaxThirst());
 		}
 
+		// Initialize Main Inventory
 		if (InventoryContainerWidget)
 		{
 			UInventoryGridWidget* Grid = InventoryContainerWidget->GetInventoryGridWidget();
 			UInventoryComponent* Inventory = PlayerCharacter->GetInventoryComponent();
 
-			// If both the grid and the inventory component are valid, initialize it
 			if (Grid && Inventory)
 			{
 				Grid->InitializeGrid(Inventory);
+			}
+		}
+		
+		// Initialize Hotbar
+		if(HotbarWidget)
+		{
+			UHotbarComponent* HotbarComponent = PlayerCharacter->GetHotbarComponent();
+
+			if(HotbarComponent)
+			{
+				HotbarWidget->InitializeHotbar(HotbarComponent);
 			}
 		}
 	}
@@ -56,7 +68,6 @@ void UPlayerHUDWidget::UpdateHunger(float CurrentValue, float MaxValue)
 	}
 	if (HungerText)
 	{
-		// Format the text to show "Current / Max"
 		FText HungerValueText = FText::FromString(FString::Printf(TEXT("%d / %d"), FMath::RoundToInt(CurrentValue), FMath::RoundToInt(MaxValue)));
 		HungerText->SetText(HungerValueText);
 	}
@@ -89,16 +100,14 @@ bool UPlayerHUDWidget::NativeOnDrop(const FGeometry& InGeometry, const FDragDrop
 
 	if (UInventoryDragDropOperation* InventoryOperation = Cast<UInventoryDragDropOperation>(InOperation))
 	{
-		// Cast the generic SourceContainer to the specific InventoryComponent
-		if (UInventoryComponent* InventoryComp = Cast<UInventoryComponent>(InventoryOperation->SourceContainer))
+		if (UContainerComponent* ContainerComp = InventoryOperation->SourceContainer)
 		{
-			// Get the full quantity of the item stack being dropped
-			const int32 QuantityToDrop = InventoryComp->GetItems()[InventoryOperation->SourceSlotIndex].Quantity;
-
-			// Now, call DropItem on the successfully casted InventoryComponent
-			InventoryComp->DropItem(InventoryOperation->SourceSlotIndex, QuantityToDrop);
+			const int32 QuantityToDrop = ContainerComp->GetItems()[InventoryOperation->SourceSlotIndex].Quantity;
 			
-			// Return true to indicate we handled the drop successfully
+			if (UInventoryComponent* InventoryComp = Cast<UInventoryComponent>(ContainerComp))
+			{
+				InventoryComp->DropItem(InventoryOperation->SourceSlotIndex, QuantityToDrop);
+			}
 			return true;
 		}
 	}

@@ -10,6 +10,7 @@ class USpringArmComponent;
 class UCameraComponent;
 class UInventoryComponent;
 class USurvivalStatsComponent;
+class UHotbarComponent;
 
 /**
  * CPP Survival Character - The main player character
@@ -39,6 +40,10 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USurvivalStatsComponent> SurvivalStatsComponent;
 
+	// Hotbar component
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UHotbarComponent> HotbarComponent;
+
 public:
 	// Movement functions called by the player controller
 	UFUNCTION(BlueprintCallable, Category = "Movement")
@@ -65,4 +70,7 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Components")
 	USurvivalStatsComponent* GetSurvivalStatsComponent() const { return SurvivalStatsComponent; }
+	
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Components")
+	UHotbarComponent* GetHotbarComponent() const { return HotbarComponent; }
 };

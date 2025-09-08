@@ -8,7 +8,8 @@
 
 class UProgressBar;
 class UTextBlock;
-class UInventoryContainerWidget; // Forward declare the new container
+class UInventoryContainerWidget;
+class UHotbarWidget;
 
 UCLASS()
 class CPPSURVIVAL_API UPlayerHUDWidget : public UUserWidget
@@ -21,11 +22,12 @@ public:
 	virtual bool NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation) override;
 
 protected:
-	// This should be your new container widget
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "UI")
 	TObjectPtr<UInventoryContainerWidget> InventoryContainerWidget;
-
-	// Stat UI elements...
+	
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "UI")
+	TObjectPtr<UHotbarWidget> HotbarWidget;
+	
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "UI")
 	TObjectPtr<UProgressBar> HungerBar;
     
@@ -39,7 +41,6 @@ protected:
 	TObjectPtr<UTextBlock> ThirstText;
 
 public:
-	// This is the new function name
 	UFUNCTION(BlueprintCallable, Category = "UI")
 	void SetInventoryContainerVisibility(bool bIsVisible);
 
