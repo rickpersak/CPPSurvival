@@ -11,7 +11,6 @@ UInventoryComponent::UInventoryComponent()
 
 bool UInventoryComponent::PickupItem(ACPPsurvival_WorldItem* WorldItem)
 {
-	// On both client and server, we can do an early check.
 	if (!WorldItem || !WorldItem->GetItemData())
 	{
 		return false;
@@ -19,30 +18,21 @@ bool UInventoryComponent::PickupItem(ACPPsurvival_WorldItem* WorldItem)
 
 	if (GetOwner()->HasAuthority())
 	{
-		// We are the server, execute the logic.
-		// We attempt to add the item using the base class function.
-		// Let's assume world items are always quantity 1 for simplicity.
-		const int32 QuantityRemaining = AddItem(WorldItem->GetItemData(), 1);
+		const int32 QuantityToPickup = WorldItem->GetQuantity();
+		const int32 QuantityRemaining = AddItem(WorldItem->GetItemData(), QuantityToPickup);
 
 		if (QuantityRemaining == 0)
 		{
-			// If AddItem returned 0, it means the item was successfully added.
-			// Now we can safely destroy the world actor.
 			WorldItem->Destroy();
 			return true;
 		}
 		
-		// If QuantityRemaining > 0, the inventory was full, so the pickup fails.
-		// We don't destroy the actor and return false.
+		WorldItem->SetQuantity(QuantityRemaining);
 		return false;
 	}
 	else
 	{
-		// We are a client, so we send an RPC to the server to do the work.
 		Server_PickupItem(WorldItem);
-		
-		// We return true for responsiveness, but the server has the final say.
-		// This is called "optimistic prediction."
 		return true;
 	}
 }
@@ -77,17 +67,14 @@ void UInventoryComponent::DropItem(int32 Index, int32 Quantity)
 		ACPPsurvival_WorldItem* NewWorldItem = GetWorld()->SpawnActor<ACPPsurvival_WorldItem>(SpawnLocation, SpawnRotation, SpawnParams);
 		if (NewWorldItem)
 		{
-			// 3. Set the item data on the new actor
-			// This will replicate to all clients and make it appear correctly.
 			NewWorldItem->SetItemData(ItemToDrop.ItemData);
+			NewWorldItem->SetQuantity(QuantityToDrop);
 
-			// 4. Remove the item from this inventory
 			RemoveItem(Index, QuantityToDrop);
 		}
 	}
 	else
 	{
-		// We are a client, send an RPC to the server.
 		Server_DropItem(Index, Quantity);
 	}
 }

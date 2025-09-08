@@ -25,9 +25,9 @@ ACPPsurvival_WorldItem::ACPPsurvival_WorldItem()
 void ACPPsurvival_WorldItem::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-	// Replicate the ItemData property to all clients.
+	
 	DOREPLIFETIME(ACPPsurvival_WorldItem, ItemData);
+	DOREPLIFETIME(ACPPsurvival_WorldItem, Quantity);
 }
 
 void ACPPsurvival_WorldItem::OnConstruction(const FTransform& Transform)
@@ -61,5 +61,19 @@ void ACPPsurvival_WorldItem::InitializeFromItemData()
 	else
 	{
 		StaticMeshComponent->SetStaticMesh(nullptr);
+	}
+}
+
+void ACPPsurvival_WorldItem::SetItemData(UItemDataInfo* NewItemData)
+{
+	ItemData = NewItemData;
+	InitializeFromItemData();
+}
+
+void ACPPsurvival_WorldItem::SetQuantity(int32 NewQuantity)
+{
+	if (HasAuthority())
+	{
+		Quantity = NewQuantity;
 	}
 }

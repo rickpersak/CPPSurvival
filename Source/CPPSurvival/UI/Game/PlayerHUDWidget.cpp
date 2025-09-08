@@ -1,4 +1,5 @@
 ﻿#include "UI/Game/PlayerHUDWidget.h"
+#include "UI/Game/InventoryContainerWidget.h"
 #include "UI/Inventory/InventoryGridWidget.h"
 #include "Components/InventoryComponent.h"
 #include "Components/SurvivalStatsComponent.h"
@@ -6,18 +7,19 @@
 #include "Components/TextBlock.h"
 #include "GameFramework/PlayerController.h"
 #include "Characters/CPPSurvivalCharacter.h"
+#include "Blueprint/DragDropOperation.h"
+#include "UI/Inventory/InventoryDragDropOperation.h"
+#include "Components/InventoryComponent.h"
 
 void UPlayerHUDWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	// --- Inventory Initialization (Existing Code) ---
-	if (InventoryGridWidget)
+	if (InventoryContainerWidget)
 	{
-		InventoryGridWidget->SetVisibility(ESlateVisibility::Collapsed);
+		InventoryContainerWidget->SetVisibility(ESlateVisibility::Collapsed);
 	}
 	
-	// We need a valid player pawn to find the stats component
 	ACPPSurvivalCharacter* PlayerCharacter = Cast<ACPPSurvivalCharacter>(GetOwningPlayerPawn());
 	if (PlayerCharacter)
 	{
@@ -25,21 +27,22 @@ void UPlayerHUDWidget::NativeConstruct()
 		USurvivalStatsComponent* StatsComponent = PlayerCharacter->GetSurvivalStatsComponent();
 		if (StatsComponent)
 		{
-			// Bind our new functions to the delegates from the component
 			StatsComponent->OnHungerUpdated.AddDynamic(this, &UPlayerHUDWidget::UpdateHunger);
 			StatsComponent->OnThirstUpdated.AddDynamic(this, &UPlayerHUDWidget::UpdateThirst);
 
-			// Call the functions once immediately to set the initial HUD state
 			UpdateHunger(StatsComponent->GetCurrentHunger(), StatsComponent->GetMaxHunger());
 			UpdateThirst(StatsComponent->GetCurrentThirst(), StatsComponent->GetMaxThirst());
 		}
-		
-		if (InventoryGridWidget)
+
+		if (InventoryContainerWidget)
 		{
+			UInventoryGridWidget* Grid = InventoryContainerWidget->GetInventoryGridWidget();
 			UInventoryComponent* Inventory = PlayerCharacter->GetInventoryComponent();
-			if (Inventory)
+
+			// If both the grid and the inventory component are valid, initialize it
+			if (Grid && Inventory)
 			{
-				InventoryGridWidget->InitializeGrid(Inventory);
+				Grid->InitializeGrid(Inventory);
 			}
 		}
 	}
@@ -72,11 +75,33 @@ void UPlayerHUDWidget::UpdateThirst(float CurrentValue, float MaxValue)
 	}
 }
 
-void UPlayerHUDWidget::SetInventoryGridVisibility(bool bIsVisible)
+void UPlayerHUDWidget::SetInventoryContainerVisibility(bool bIsVisible)
 {
-	if (InventoryGridWidget)
+	if (InventoryContainerWidget)
 	{
-		const ESlateVisibility NewVisibility = bIsVisible ? ESlateVisibility::Visible : ESlateVisibility::Collapsed;
-		InventoryGridWidget->SetVisibility(NewVisibility);
+		InventoryContainerWidget->SetInventoryContentVisibility(bIsVisible);
 	}
+}
+
+bool UPlayerHUDWidget::NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation)
+{
+	Super::NativeOnDrop(InGeometry, InDragDropEvent, InOperation);
+
+	if (UInventoryDragDropOperation* InventoryOperation = Cast<UInventoryDragDropOperation>(InOperation))
+	{
+		// Cast the generic SourceContainer to the specific InventoryComponent
+		if (UInventoryComponent* InventoryComp = Cast<UInventoryComponent>(InventoryOperation->SourceContainer))
+		{
+			// Get the full quantity of the item stack being dropped
+			const int32 QuantityToDrop = InventoryComp->GetItems()[InventoryOperation->SourceSlotIndex].Quantity;
+
+			// Now, call DropItem on the successfully casted InventoryComponent
+			InventoryComp->DropItem(InventoryOperation->SourceSlotIndex, QuantityToDrop);
+			
+			// Return true to indicate we handled the drop successfully
+			return true;
+		}
+	}
+
+	return false;
 }

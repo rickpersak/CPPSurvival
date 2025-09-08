@@ -41,14 +41,22 @@ protected:
 	UPROPERTY(ReplicatedUsing = OnRep_ItemData, BlueprintReadWrite, EditAnywhere, Category = "Item")
 	TObjectPtr<UItemDataInfo> ItemData;
 
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Item")
+	int32 Quantity = 1;
+
 public:
-	// Getter for item data
+	
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Item")
 	UItemDataInfo* GetItemData() const { return ItemData; }
-
-	// Setter for item data
+	
 	UFUNCTION(BlueprintCallable, Category = "Item")
-	void SetItemData(UItemDataInfo* NewItemData) { ItemData = NewItemData; InitializeFromItemData(); }
+	void SetItemData(UItemDataInfo* NewItemData);
+	
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Item")
+	int32 GetQuantity() const { return Quantity; }
+	
+	UFUNCTION(BlueprintCallable, Category = "Item")
+	void SetQuantity(int32 NewQuantity);
 
 protected:
 	// Called when ItemData is replicated to clients

@@ -1,16 +1,15 @@
+// PlayerHUDWidget.h
+
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "PlayerHUDWidget.generated.h"
 
-class UInventoryGridWidget;
-class UProgressBar; 
-class UTextBlock; 
+class UProgressBar;
+class UTextBlock;
+class UInventoryContainerWidget; // Forward declare the new container
 
-/**
- * Player HUD Widget - The main UI widget for the player
- */
 UCLASS()
 class CPPSURVIVAL_API UPlayerHUDWidget : public UUserWidget
 {
@@ -19,15 +18,17 @@ class CPPSURVIVAL_API UPlayerHUDWidget : public UUserWidget
 public:
 	virtual void NativeConstruct() override;
 
-protected:
-	// Reference to the inventory grid widget
-	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "UI")
-	TObjectPtr<UInventoryGridWidget> InventoryGridWidget;
+	virtual bool NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation) override;
 
-	// Add pointers for your new stat display widgets
+protected:
+	// This should be your new container widget
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "UI")
+	TObjectPtr<UInventoryContainerWidget> InventoryContainerWidget;
+
+	// Stat UI elements...
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "UI")
 	TObjectPtr<UProgressBar> HungerBar;
-
+    
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "UI")
 	TObjectPtr<UProgressBar> ThirstBar;
 
@@ -38,16 +39,11 @@ protected:
 	TObjectPtr<UTextBlock> ThirstText;
 
 public:
-	// Set the visibility of the inventory grid
+	// This is the new function name
 	UFUNCTION(BlueprintCallable, Category = "UI")
-	void SetInventoryGridVisibility(bool bIsVisible);
-
-	// Getters
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "UI")
-	UInventoryGridWidget* GetInventoryGridWidget() const { return InventoryGridWidget; }
+	void SetInventoryContainerVisibility(bool bIsVisible);
 
 protected:
-	// New functions to handle the stat updates
 	UFUNCTION()
 	void UpdateHunger(float CurrentValue, float MaxValue);
 	

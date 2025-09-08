@@ -213,7 +213,7 @@ void ACPPSurvivalPlayerController::OnToggleInventory()
 
 	if (bIsInventoryOpen)
 	{
-		PlayerHUD->SetInventoryGridVisibility(true);
+		PlayerHUD->SetInventoryContainerVisibility(true);
 		FInputModeGameAndUI InputMode;
 		InputMode.SetWidgetToFocus(PlayerHUD->TakeWidget());
 		SetInputMode(InputMode);
@@ -221,7 +221,7 @@ void ACPPSurvivalPlayerController::OnToggleInventory()
 	}
 	else
 	{
-		PlayerHUD->SetInventoryGridVisibility(false);
+		PlayerHUD->SetInventoryContainerVisibility(false);
 		const FInputModeGameOnly InputMode;
 		SetInputMode(InputMode);
 		bShowMouseCursor = false;
