@@ -2,7 +2,6 @@
 #include "UI/Game/InventoryContainerWidget.h"
 #include "UI/Game/WorldContainerWidget.h"
 #include "UI/Inventory/InventoryGridWidget.h"
-#include "UI/Game/WorldContainerGridWidget.h"
 #include "UI/Inventory/HotbarWidget.h"
 #include "Components/InventoryComponent.h"
 #include "Components/HotbarComponent.h"
@@ -127,20 +126,10 @@ void UPlayerHUDWidget::OpenWorldContainer(UContainerComponent* ContainerComponen
 		return;
 	}
 	
-	UWorldContainerGridWidget* Grid = WorldContainerWidget->GetContainerGridWidget();
-	UE_LOG(LogCPPSurvival, Warning, TEXT("OpenWorldContainer: Grid widget is %s"), *GetNameSafe(Grid));
-	
-	if (Grid)
-	{
-		UE_LOG(LogCPPSurvival, Warning, TEXT("OpenWorldContainer: Calling InitializeGrid with container capacity: %d"), ContainerComponent->GetCapacity());
-		Grid->InitializeGrid(ContainerComponent);
-		WorldContainerWidget->SetInventoryContentVisibility(true);
-		UE_LOG(LogCPPSurvival, Warning, TEXT("OpenWorldContainer: WorldContainer visibility set to true"));
-	}
-	else
-	{
-		UE_LOG(LogCPPSurvival, Error, TEXT("OpenWorldContainer: Grid widget is null!"));
-	}
+	UE_LOG(LogCPPSurvival, Warning, TEXT("OpenWorldContainer: Calling InitializeContainer with container capacity: %d"), ContainerComponent->GetCapacity());
+	WorldContainerWidget->InitializeContainer(ContainerComponent);
+	WorldContainerWidget->SetInventoryContentVisibility(true);
+	UE_LOG(LogCPPSurvival, Warning, TEXT("OpenWorldContainer: WorldContainer visibility set to true"));
 }
 
 void UPlayerHUDWidget::CloseWorldContainer()
