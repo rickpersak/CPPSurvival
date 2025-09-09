@@ -1,5 +1,3 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
-
 #include "CPPSurvivalPlayerController.h"
 #include "EnhancedInputSubsystems.h"
 #include "Engine/LocalPlayer.h"
@@ -15,6 +13,7 @@
 #include "UI/Game/PlayerHUDWidget.h"
 #include "UI/Game/CPPSurvivalHUD.h"
 #include "Components/ContainerComponent.h"
+#include "SaveSystem/SaveLoadSubsystem.h"
 
 void ACPPSurvivalPlayerController::BeginPlay()
 {
@@ -87,10 +86,32 @@ void ACPPSurvivalPlayerController::SetupInputComponent()
 		EnhancedInputComponent->BindAction(MouseLookAction, ETriggerEvent::Triggered, this, &ACPPSurvivalPlayerController::OnLook);
 		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &ACPPSurvivalPlayerController::OnInteract);
 		EnhancedInputComponent->BindAction(ToggleInventoryAction, ETriggerEvent::Started, this, &ACPPSurvivalPlayerController::OnToggleInventory);
+		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &ACPPSurvivalPlayerController::OnSprintStarted);
+		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &ACPPSurvivalPlayerController::OnSprintCompleted);
 	}
 	else
 	{
 		UE_LOG(LogCPPSurvival, Error, TEXT("'%s' Failed to find an Enhanced Input component!"), *GetNameSafe(this));
+	}
+}
+
+void ACPPSurvivalPlayerController::OnPossess(APawn* InPawn)
+{
+	Super::OnPossess(InPawn);
+
+	if (USaveLoadSubsystem* SaveLoadSubsystem = GetGameInstance()->GetSubsystem<USaveLoadSubsystem>())
+	{
+		SaveLoadSubsystem->LoadPlayer(this);
+	}
+}
+
+void ACPPSurvivalPlayerController::OnUnPossess()
+{
+	Super::OnUnPossess();
+
+	if (USaveLoadSubsystem* SaveLoadSubsystem = GetGameInstance()->GetSubsystem<USaveLoadSubsystem>())
+	{
+		SaveLoadSubsystem->SavePlayer(this);
 	}
 }
 
@@ -206,6 +227,22 @@ void ACPPSurvivalPlayerController::OnToggleInventory()
 		UE_LOG(LogCPPSurvival, Warning, TEXT("Opening player inventory - Character: %s, InventoryComponent: %s"), 
 			*GetNameSafe(MyCharacter), *GetNameSafe(InventoryComp));
 		OpenContainer(InventoryComp);
+	}
+}
+
+void ACPPSurvivalPlayerController::OnSprintStarted()
+{
+	if (ACPPSurvivalCharacter* MyCharacter = Cast<ACPPSurvivalCharacter>(GetPawn()))
+	{
+		MyCharacter->StartSprint();
+	}
+}
+
+void ACPPSurvivalPlayerController::OnSprintCompleted()
+{
+	if (ACPPSurvivalCharacter* MyCharacter = Cast<ACPPSurvivalCharacter>(GetPawn()))
+	{
+		MyCharacter->StopSprint();
 	}
 }
 

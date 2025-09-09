@@ -28,6 +28,9 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupInputComponent() override;
 
+	virtual void OnPossess(APawn* InPawn) override;
+	virtual void OnUnPossess() override;
+
 protected:
 	// --- Input ---
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
@@ -53,6 +56,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	TObjectPtr<UInputAction> ToggleInventoryAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	TObjectPtr<UInputAction> SprintAction;
 
 	// --- UI ---
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI")
@@ -83,6 +89,8 @@ public:
 	void OnJumpCompleted();
 	void OnInteract();
 	void OnToggleInventory();
+	void OnSprintStarted();
+	void OnSprintCompleted();
 
 	// Getters
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "UI")

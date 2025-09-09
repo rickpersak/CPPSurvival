@@ -102,11 +102,8 @@ void UWorldContainerWidget::InitializeContainer(UContainerComponent* NewContaine
 			GridSlot->SetHorizontalAlignment(HAlign_Center);
 			GridSlot->SetVerticalAlignment(VAlign_Center);
 			
-			// Force each slot to be exactly the slot size
-			if (SlotWidget)
-			{
-				SlotWidget->SetDesiredSizeInViewport(SlotSize);
-			}
+			// Note: SetDesiredSizeInViewport should NOT be used on child widgets in a grid
+			// The slot sizing is handled by the UniformGridSlot and the grid layout
 			
 			if (i == 0) // Log only the first slot to avoid spam
 			{

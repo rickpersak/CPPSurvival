@@ -37,9 +37,11 @@ void UPlayerHUDWidget::NativeConstruct()
 		{
 			StatsComponent->OnHungerUpdated.AddDynamic(this, &UPlayerHUDWidget::UpdateHunger);
 			StatsComponent->OnThirstUpdated.AddDynamic(this, &UPlayerHUDWidget::UpdateThirst);
+			StatsComponent->OnStaminaUpdated.AddDynamic(this, &UPlayerHUDWidget::UpdateStamina);
 
 			UpdateHunger(StatsComponent->GetCurrentHunger(), StatsComponent->GetMaxHunger());
 			UpdateThirst(StatsComponent->GetCurrentThirst(), StatsComponent->GetMaxThirst());
+			UpdateStamina(StatsComponent->GetCurrentStamina(), StatsComponent->GetMaxStamina());
 		}
 		
 		// --- Initialize Player Inventory ---
@@ -90,6 +92,19 @@ void UPlayerHUDWidget::UpdateThirst(float CurrentValue, float MaxValue)
 	{
 		FText ThirstValueText = FText::FromString(FString::Printf(TEXT("%d / %d"), FMath::RoundToInt(CurrentValue), FMath::RoundToInt(MaxValue)));
 		ThirstText->SetText(ThirstValueText);
+	}
+}
+
+void UPlayerHUDWidget::UpdateStamina(float CurrentValue, float MaxValue)
+{
+	if (StaminaBar)
+	{
+		StaminaBar->SetPercent(CurrentValue / MaxValue);
+	}
+	if (StaminaText)
+	{
+		FText StaminaValueText = FText::FromString(FString::Printf(TEXT("%d / %d"), FMath::RoundToInt(CurrentValue), FMath::RoundToInt(MaxValue)));
+		StaminaText->SetText(StaminaValueText);
 	}
 }
 

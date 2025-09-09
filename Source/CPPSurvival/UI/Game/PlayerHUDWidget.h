@@ -51,10 +51,16 @@ protected:
 	TObjectPtr<UProgressBar> ThirstBar;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "UI")
+	TObjectPtr<UProgressBar> StaminaBar;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "UI")
 	TObjectPtr<UTextBlock> HungerText;
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "UI")
 	TObjectPtr<UTextBlock> ThirstText;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "UI")
+	TObjectPtr<UTextBlock> StaminaText;
 
 protected:
 	UFUNCTION()
@@ -62,4 +68,7 @@ protected:
 	
 	UFUNCTION()
 	void UpdateThirst(float CurrentValue, float MaxValue);
+
+	UFUNCTION()
+	void UpdateStamina(float CurrentValue, float MaxValue);
 };

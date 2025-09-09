@@ -24,6 +24,9 @@ public:
 	ACPPSurvivalCharacter();
 
 protected:
+	// Called when the game starts or when spawned
+	virtual void BeginPlay() override;
+
 	// Camera boom positioning the camera behind the character
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USpringArmComponent> CameraBoom;
@@ -44,6 +47,22 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UHotbarComponent> HotbarComponent;
 
+	// True if the character is sprinting
+	UPROPERTY(ReplicatedUsing = OnRep_IsSprinting, BlueprintReadOnly, Category = "Movement")
+	bool bIsSprinting;
+	
+	// Called when bIsSprinting is replicated
+	UFUNCTION()
+	void OnRep_IsSprinting();
+
+	// The character's normal walking speed
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	float WalkSpeed;
+
+	// The character's sprinting speed
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	float SprintSpeed;
+
 public:
 	// Movement functions called by the player controller
 	UFUNCTION(BlueprintCallable, Category = "Movement")
@@ -57,6 +76,22 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Movement")
 	void DoJumpEnd();
+
+	UFUNCTION(BlueprintCallable, Category = "Movement")
+	void StartSprint();
+
+	UFUNCTION(BlueprintCallable, Category = "Movement")
+	void StopSprint();
+
+	UFUNCTION(Server, Reliable)
+	void Server_StartSprint();
+
+	UFUNCTION(Server, Reliable)
+	void Server_StopSprint();
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Movement")
+	bool IsSprinting() const { return bIsSprinting; }
+
 
 	// Getters for components
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Components")

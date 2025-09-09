@@ -1,5 +1,6 @@
 ﻿#include "Components/SurvivalStatsComponent.h"
 #include "Net/UnrealNetwork.h"
+#include "Characters/CPPSurvivalCharacter.h"
 
 USurvivalStatsComponent::USurvivalStatsComponent()
 {
@@ -17,6 +18,7 @@ void USurvivalStatsComponent::BeginPlay()
 	{
 		CurrentHunger = MaxHunger;
 		CurrentThirst = MaxThirst;
+		CurrentStamina = MaxStamina;
 
 		// Set a repeating timer to call HandleStatDecay every 1.0 second
 		GetWorld()->GetTimerManager().SetTimer(
@@ -24,6 +26,14 @@ void USurvivalStatsComponent::BeginPlay()
 			this, 
 			&USurvivalStatsComponent::HandleStatDecay, 
 			1.0f, 
+			true);
+
+		// Set a repeating timer to call HandleStamina every 0.1 seconds
+		GetWorld()->GetTimerManager().SetTimer(
+			StaminaTimerHandle,
+			this,
+			&USurvivalStatsComponent::HandleStamina,
+			0.1f,
 			true);
 	}
 }
@@ -38,12 +48,29 @@ void USurvivalStatsComponent::HandleStatDecay()
 	}
 }
 
+void USurvivalStatsComponent::HandleStamina()
+{
+	if (GetOwner()->HasAuthority())
+	{
+		ACPPSurvivalCharacter* Character = Cast<ACPPSurvivalCharacter>(GetOwner());
+		if (Character && Character->IsSprinting())
+		{
+			ModifyStamina(-StaminaDrainRate * 0.1f);
+		}
+		else
+		{
+			ModifyStamina(StaminaRegenRate * 0.1f);
+		}
+	}
+}
+
 void USurvivalStatsComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(USurvivalStatsComponent, CurrentHunger);
 	DOREPLIFETIME(USurvivalStatsComponent, CurrentThirst);
+	DOREPLIFETIME(USurvivalStatsComponent, CurrentStamina);
 }
 
 void USurvivalStatsComponent::ModifyHunger(float Amount)
@@ -76,6 +103,20 @@ void USurvivalStatsComponent::ModifyThirst(float Amount)
 	}
 }
 
+void USurvivalStatsComponent::ModifyStamina(float Amount)
+{
+	if (GetOwner()->HasAuthority())
+	{
+		const float OldStamina = CurrentStamina;
+		CurrentStamina = FMath::Clamp(CurrentStamina + Amount, 0.f, MaxStamina);
+
+		if (OldStamina != CurrentStamina)
+		{
+			BroadcastStaminaUpdate();
+		}
+	}
+}
+
 void USurvivalStatsComponent::OnRep_CurrentHunger()
 {
 	BroadcastHungerUpdate();
@@ -86,6 +127,11 @@ void USurvivalStatsComponent::OnRep_CurrentThirst()
 	BroadcastThirstUpdate();
 }
 
+void USurvivalStatsComponent::OnRep_CurrentStamina()
+{
+	BroadcastStaminaUpdate();
+}
+
 void USurvivalStatsComponent::BroadcastHungerUpdate()
 {
 	OnHungerUpdated.Broadcast(CurrentHunger, MaxHunger);
@@ -94,4 +140,9 @@ void USurvivalStatsComponent::BroadcastHungerUpdate()
 void USurvivalStatsComponent::BroadcastThirstUpdate()
 {
 	OnThirstUpdated.Broadcast(CurrentThirst, MaxThirst);
+}
+
+void USurvivalStatsComponent::BroadcastStaminaUpdate()
+{
+	OnStaminaUpdated.Broadcast(CurrentStamina, MaxStamina);
 }

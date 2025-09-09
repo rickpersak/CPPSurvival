@@ -10,7 +10,7 @@
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnStatsUpdated, float, CurrentValue, float, MaxValue);
 
 /**
- * Survival Stats Component - Manages hunger and thirst
+ * Survival Stats Component - Manages hunger, thirst, and stamina
  */
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class CPPSURVIVAL_API USurvivalStatsComponent : public UActorComponent
@@ -35,6 +35,10 @@ protected:
 	UPROPERTY(ReplicatedUsing = OnRep_CurrentThirst, BlueprintReadOnly, Category = "Survival Stats")
 	float CurrentThirst = 100.0f;
 
+	// Current stamina value (replicated)
+	UPROPERTY(ReplicatedUsing = OnRep_CurrentStamina, BlueprintReadOnly, Category = "Survival Stats")
+	float CurrentStamina = 100.0f;
+
 	// Maximum hunger value
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Survival Stats", meta = (ClampMin = "1.0"))
 	float MaxHunger = 100.0f;
@@ -42,6 +46,10 @@ protected:
 	// Maximum thirst value
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Survival Stats", meta = (ClampMin = "1.0"))
 	float MaxThirst = 100.0f;
+
+	// Maximum stamina value
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Survival Stats", meta = (ClampMin = "1.0"))
+	float MaxStamina = 100.0f;
 
 	// Rate at which hunger decreases per second
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Survival Stats", meta = (ClampMin = "0.0"))
@@ -51,7 +59,16 @@ protected:
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Survival Stats", meta = (ClampMin = "0.0"))
 	float ThirstDecayRate = 1.5f;
 
+	// Rate at which stamina regenerates per second
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Survival Stats", meta = (ClampMin = "0.0"))
+	float StaminaRegenRate = 5.0f;
+	
+	// Rate at which stamina drains per second
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Survival Stats", meta = (ClampMin = "0.0"))
+	float StaminaDrainRate = 10.0f;
+
 	void HandleStatDecay();
+	void HandleStamina();
 
 public:
 	// Events that fire when stats change
@@ -61,6 +78,9 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Survival Stats")
 	FOnStatsUpdated OnThirstUpdated;
 
+	UPROPERTY(BlueprintAssignable, Category = "Survival Stats")
+	FOnStatsUpdated OnStaminaUpdated;
+
 	// Modify hunger (positive to increase, negative to decrease)
 	UFUNCTION(BlueprintCallable, Category = "Survival Stats")
 	void ModifyHunger(float Amount);
@@ -68,6 +88,10 @@ public:
 	// Modify thirst (positive to increase, negative to decrease)
 	UFUNCTION(BlueprintCallable, Category = "Survival Stats")
 	void ModifyThirst(float Amount);
+
+	// Modify stamina (positive to increase, negative to decrease)
+	UFUNCTION(BlueprintCallable, Category = "Survival Stats")
+	void ModifyStamina(float Amount);
 
 	// Getters
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Survival Stats")
@@ -77,10 +101,16 @@ public:
 	float GetCurrentThirst() const { return CurrentThirst; }
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Survival Stats")
+	float GetCurrentStamina() const { return CurrentStamina; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Survival Stats")
 	float GetMaxHunger() const { return MaxHunger; }
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Survival Stats")
 	float GetMaxThirst() const { return MaxThirst; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Survival Stats")
+	float GetMaxStamina() const { return MaxStamina; }
 
 protected:
 	// Replication callbacks
@@ -90,10 +120,15 @@ protected:
 	UFUNCTION()
 	void OnRep_CurrentThirst();
 
+	UFUNCTION()
+	void OnRep_CurrentStamina();
+
 	// Helper functions to broadcast updates
 	void BroadcastHungerUpdate();
 	void BroadcastThirstUpdate();
+	void BroadcastStaminaUpdate();
 
 private:
 	FTimerHandle StatDecayTimerHandle;
+	FTimerHandle StaminaTimerHandle;
 };

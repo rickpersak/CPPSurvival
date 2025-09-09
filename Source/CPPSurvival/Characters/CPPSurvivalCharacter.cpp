@@ -9,6 +9,7 @@
 #include "Components/SurvivalStatsComponent.h"
 #include "Components/HotbarComponent.h"
 #include "CPPSurvival.h"
+#include "Net/UnrealNetwork.h"
 
 ACPPSurvivalCharacter::ACPPSurvivalCharacter()
 {
@@ -36,6 +37,23 @@ ACPPSurvivalCharacter::ACPPSurvivalCharacter()
 	SurvivalStatsComponent = CreateDefaultSubobject<USurvivalStatsComponent>(TEXT("SurvivalStatsComponent"));
 	HotbarComponent = CreateDefaultSubobject<UHotbarComponent>(TEXT("HotbarComponent"));
 
+	bIsSprinting = false;
+	WalkSpeed = 500.f;
+	SprintSpeed = 800.f;
+}
+
+void ACPPSurvivalCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+
+	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+}
+
+void ACPPSurvivalCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ACPPSurvivalCharacter, bIsSprinting);
 }
 
 
@@ -69,4 +87,45 @@ void ACPPSurvivalCharacter::DoJumpStart()
 void ACPPSurvivalCharacter::DoJumpEnd()
 {
 	StopJumping();
+}
+
+void ACPPSurvivalCharacter::StartSprint()
+{
+	if (HasAuthority())
+	{
+		bIsSprinting = true;
+		OnRep_IsSprinting();
+	}
+	else
+	{
+		Server_StartSprint();
+	}
+}
+
+void ACPPSurvivalCharacter::StopSprint()
+{
+	if (HasAuthority())
+	{
+		bIsSprinting = false;
+		OnRep_IsSprinting();
+	}
+	else
+	{
+		Server_StopSprint();
+	}
+}
+
+void ACPPSurvivalCharacter::Server_StartSprint_Implementation()
+{
+	StartSprint();
+}
+
+void ACPPSurvivalCharacter::Server_StopSprint_Implementation()
+{
+	StopSprint();
+}
+
+void ACPPSurvivalCharacter::OnRep_IsSprinting()
+{
+	GetCharacterMovement()->MaxWalkSpeed = bIsSprinting ? SprintSpeed : WalkSpeed;
 }
