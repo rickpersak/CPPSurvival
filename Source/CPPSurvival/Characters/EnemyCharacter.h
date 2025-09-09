@@ -39,6 +39,9 @@ protected:
 	UFUNCTION()
 	void OnDeath();
 
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_OnDeath();
+
 private:
 	// Populates the container's inventory based on the LootTable.
 	void PopulateFromLootTable();

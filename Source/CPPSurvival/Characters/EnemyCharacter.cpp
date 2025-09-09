@@ -10,6 +10,9 @@ AEnemyCharacter::AEnemyCharacter()
 {
  	// This actor doesn't tick.
 	PrimaryActorTick.bCanEverTick = false;
+	
+	GetCapsuleComponent()->SetCollisionProfileName(TEXT("Pawn"));
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 
 	// Create the health component.
 	HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
@@ -37,7 +40,13 @@ void AEnemyCharacter::BeginPlay()
 void AEnemyCharacter::OnDeath()
 {
 	// This function is only ever called on the server because the delegate is only bound there.
+	PopulateFromLootTable();
+	Multicast_OnDeath();
+	SetLifeSpan(120.0f);
+}
 
+void AEnemyCharacter::Multicast_OnDeath_Implementation()
+{
 	// Stop the AI controller.
 	AController* AIController = GetController();
 	if (AIController)
@@ -52,13 +61,10 @@ void AEnemyCharacter::OnDeath()
 		MovementComp->StopMovementImmediately();
 	}
 
-	// Set the capsule to only query for visibility and ignore the pawn.
-	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
-	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
-
-	// Populate the inventory with loot.
-	PopulateFromLootTable();
+	// Disable the capsule component's collision entirely.
+	// This is what allows you to walk through the corpse.
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	GetCapsuleComponent()->SetCollisionResponseToAllChannels(ECR_Ignore);
 
 	// Turn the mesh into a ragdoll. The mesh already exists as part of ACharacter.
 	USkeletalMeshComponent* MeshComponent = GetMesh();
@@ -73,15 +79,12 @@ void AEnemyCharacter::OnDeath()
 		
 		// Enable physics simulation for ragdoll effect
 		MeshComponent->SetSimulatePhysics(true);
-		
-		// Override the visibility response so we can interact with the corpse
+
+		// Allow the mesh to be hit by the visibility trace for looting
 		MeshComponent->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 		
 		UE_LOG(LogTemp, Warning, TEXT("Ragdoll setup complete for %s"), *GetName());
 	}
-	
-	// The corpse will be removed from the world after 2 minutes.
-	SetLifeSpan(120.0f);
 }
 
 void AEnemyCharacter::PopulateFromLootTable()
