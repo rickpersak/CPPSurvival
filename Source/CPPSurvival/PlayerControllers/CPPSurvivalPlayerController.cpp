@@ -20,9 +20,21 @@ void ACPPSurvivalPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 
+	// Try to get the HUD and PlayerHUDWidget
 	if (ACPPsurvivalHUD* HUD = GetHUD<ACPPsurvivalHUD>())
 	{
 		PlayerHUD = HUD->GetPlayerHUDWidget();
+		UE_LOG(LogCPPSurvival, Warning, TEXT("BeginPlay: PlayerHUD set to %s"), *GetNameSafe(PlayerHUD));
+		
+		// If PlayerHUD is still null, it might be a timing issue - we'll retry later
+		if (!PlayerHUD)
+		{
+			UE_LOG(LogCPPSurvival, Warning, TEXT("BeginPlay: PlayerHUD is null, will retry during first inventory toggle"));
+		}
+	}
+	else
+	{
+		UE_LOG(LogCPPSurvival, Error, TEXT("BeginPlay: Failed to get HUD!"));
 	}
 
 	// only spawn touch controls on local player controllers
@@ -124,7 +136,11 @@ void ACPPSurvivalPlayerController::OnJumpCompleted()
 
 void ACPPSurvivalPlayerController::OnInteract()
 {
-	if (bIsInventoryOpen) return;
+	if (bIsInventoryOpen)
+	{
+		CloseContainer();
+		return;
+	}
 	
 	ACPPSurvivalCharacter* MyCharacter = Cast<ACPPSurvivalCharacter>(GetPawn());
 	if (!MyCharacter) return;
@@ -152,6 +168,10 @@ void ACPPSurvivalPlayerController::OnInteract()
 		// Case 2: Interacting with an actor that has a container component (e.g., a chest)
 		else if (UContainerComponent* Container = HitResult.GetActor()->FindComponentByClass<UContainerComponent>())
 		{
+			UE_LOG(LogCPPSurvival, Warning, TEXT("OnInteract: Found container component %s on actor %s"), 
+				*GetNameSafe(Container), *GetNameSafe(HitResult.GetActor()));
+			UE_LOG(LogCPPSurvival, Warning, TEXT("OnInteract: Container capacity: %d, Container name: %s"), 
+				Container->GetCapacity(), *Container->GetContainerName().ToString());
 			OpenContainer(Container);
 		}
 	}
@@ -159,30 +179,68 @@ void ACPPSurvivalPlayerController::OnInteract()
 
 void ACPPSurvivalPlayerController::OnToggleInventory()
 {
+	UE_LOG(LogCPPSurvival, Warning, TEXT("OnToggleInventory called! bIsInventoryOpen = %s"), bIsInventoryOpen ? TEXT("true") : TEXT("false"));
+	
 	if (bIsInventoryOpen)
 	{
+		UE_LOG(LogCPPSurvival, Warning, TEXT("Inventory is open, closing container"));
 		CloseContainer();
 	}
 	else
 	{
 		// Open just the player's inventory
 		ACPPSurvivalCharacter* MyCharacter = GetPawn<ACPPSurvivalCharacter>();
-		if (MyCharacter && MyCharacter->GetInventoryComponent())
+		if (!MyCharacter)
 		{
-			OpenContainer(MyCharacter->GetInventoryComponent());
+			UE_LOG(LogCPPSurvival, Error, TEXT("OnToggleInventory: MyCharacter is null!"));
+			return;
 		}
+		
+		UInventoryComponent* InventoryComp = MyCharacter->GetInventoryComponent();
+		if (!InventoryComp)
+		{
+			UE_LOG(LogCPPSurvival, Error, TEXT("OnToggleInventory: InventoryComponent is null!"));
+			return;
+		}
+		
+		UE_LOG(LogCPPSurvival, Warning, TEXT("Opening player inventory - Character: %s, InventoryComponent: %s"), 
+			*GetNameSafe(MyCharacter), *GetNameSafe(InventoryComp));
+		OpenContainer(InventoryComp);
 	}
 }
 
 void ACPPSurvivalPlayerController::OpenContainer(UContainerComponent* ContainerToOpen)
 {
-	if (!PlayerHUD || !ContainerToOpen)
+	UE_LOG(LogCPPSurvival, Warning, TEXT("OpenContainer called - PlayerHUD: %s, ContainerToOpen: %s"), 
+		*GetNameSafe(PlayerHUD), *GetNameSafe(ContainerToOpen));
+		
+	// If PlayerHUD is null, try to get it again (timing issue fix)
+	if (!PlayerHUD)
 	{
+		UE_LOG(LogCPPSurvival, Warning, TEXT("OpenContainer: PlayerHUD is null, attempting to retrieve it again..."));
+		if (ACPPsurvivalHUD* HUD = GetHUD<ACPPsurvivalHUD>())
+		{
+			PlayerHUD = HUD->GetPlayerHUDWidget();
+			UE_LOG(LogCPPSurvival, Warning, TEXT("OpenContainer: Retry - PlayerHUD now set to %s"), *GetNameSafe(PlayerHUD));
+		}
+		
+		if (!PlayerHUD)
+		{
+			UE_LOG(LogCPPSurvival, Error, TEXT("OpenContainer: PlayerHUD is still null after retry!"));
+			return;
+		}
+	}
+	
+	if (!ContainerToOpen)
+	{
+		UE_LOG(LogCPPSurvival, Error, TEXT("OpenContainer: ContainerToOpen is null!"));
 		return;
 	}
 
 	CurrentOpenContainer = ContainerToOpen;
 	bIsInventoryOpen = true;
+	
+	UE_LOG(LogCPPSurvival, Warning, TEXT("Setting bIsInventoryOpen = true, calling SetInventoryContainerVisibility(true)"));
 
 	// Open player inventory
 	PlayerHUD->SetInventoryContainerVisibility(true);
@@ -191,13 +249,20 @@ void ACPPSurvivalPlayerController::OpenContainer(UContainerComponent* ContainerT
 	ACPPSurvivalCharacter* MyCharacter = GetPawn<ACPPSurvivalCharacter>();
 	if (MyCharacter && CurrentOpenContainer != MyCharacter->GetInventoryComponent())
 	{
+		UE_LOG(LogCPPSurvival, Warning, TEXT("Opening world container (not player inventory)"));
 		PlayerHUD->OpenWorldContainer(CurrentOpenContainer);
+	}
+	else
+	{
+		UE_LOG(LogCPPSurvival, Warning, TEXT("Opening player inventory only"));
 	}
 	
 	FInputModeGameAndUI InputMode;
 	InputMode.SetWidgetToFocus(PlayerHUD->TakeWidget());
 	SetInputMode(InputMode);
 	bShowMouseCursor = true;
+	
+	UE_LOG(LogCPPSurvival, Warning, TEXT("OpenContainer completed - bShowMouseCursor = true, InputMode set to GameAndUI"));
 }
 
 void ACPPSurvivalPlayerController::CloseContainer()

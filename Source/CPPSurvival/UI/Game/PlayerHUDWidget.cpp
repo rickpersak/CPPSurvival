@@ -13,6 +13,7 @@
 #include "Characters/CPPSurvivalCharacter.h"
 #include "Blueprint/DragDropOperation.h"
 #include "UI/Inventory/InventoryDragDropOperation.h"
+#include "CPPSurvival.h"
 
 void UPlayerHUDWidget::NativeConstruct()
 {
@@ -95,22 +96,50 @@ void UPlayerHUDWidget::UpdateThirst(float CurrentValue, float MaxValue)
 
 void UPlayerHUDWidget::SetInventoryContainerVisibility(bool bIsVisible)
 {
+	UE_LOG(LogCPPSurvival, Warning, TEXT("SetInventoryContainerVisibility called with bIsVisible = %s, InventoryContainerWidget = %s"), 
+		bIsVisible ? TEXT("true") : TEXT("false"), *GetNameSafe(InventoryContainerWidget));
+		
 	if (InventoryContainerWidget)
 	{
 		InventoryContainerWidget->SetInventoryContentVisibility(bIsVisible);
+		UE_LOG(LogCPPSurvival, Warning, TEXT("Called SetInventoryContentVisibility on InventoryContainerWidget"));
+	}
+	else
+	{
+		UE_LOG(LogCPPSurvival, Error, TEXT("InventoryContainerWidget is null!"));
 	}
 }
 
 void UPlayerHUDWidget::OpenWorldContainer(UContainerComponent* ContainerComponent)
 {
-	if (WorldContainerWidget && ContainerComponent)
+	UE_LOG(LogCPPSurvival, Warning, TEXT("OpenWorldContainer called - WorldContainerWidget: %s, ContainerComponent: %s"), 
+		*GetNameSafe(WorldContainerWidget), *GetNameSafe(ContainerComponent));
+		
+	if (!WorldContainerWidget)
 	{
-		UWorldContainerGridWidget* Grid = WorldContainerWidget->GetContainerGridWidget();
-		if (Grid)
-		{
-			Grid->InitializeGrid(ContainerComponent);
-			WorldContainerWidget->SetInventoryContentVisibility(true);
-		}
+		UE_LOG(LogCPPSurvival, Error, TEXT("OpenWorldContainer: WorldContainerWidget is null!"));
+		return;
+	}
+	
+	if (!ContainerComponent)
+	{
+		UE_LOG(LogCPPSurvival, Error, TEXT("OpenWorldContainer: ContainerComponent is null!"));
+		return;
+	}
+	
+	UWorldContainerGridWidget* Grid = WorldContainerWidget->GetContainerGridWidget();
+	UE_LOG(LogCPPSurvival, Warning, TEXT("OpenWorldContainer: Grid widget is %s"), *GetNameSafe(Grid));
+	
+	if (Grid)
+	{
+		UE_LOG(LogCPPSurvival, Warning, TEXT("OpenWorldContainer: Calling InitializeGrid with container capacity: %d"), ContainerComponent->GetCapacity());
+		Grid->InitializeGrid(ContainerComponent);
+		WorldContainerWidget->SetInventoryContentVisibility(true);
+		UE_LOG(LogCPPSurvival, Warning, TEXT("OpenWorldContainer: WorldContainer visibility set to true"));
+	}
+	else
+	{
+		UE_LOG(LogCPPSurvival, Error, TEXT("OpenWorldContainer: Grid widget is null!"));
 	}
 }
 
