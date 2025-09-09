@@ -4,6 +4,7 @@
 #include "Components/HealthComponent.h"
 #include "Data/ItemDataInfo.h"
 #include "AIController.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 AEnemyCharacter::AEnemyCharacter()
 {
@@ -44,8 +45,17 @@ void AEnemyCharacter::OnDeath()
 		AIController->UnPossess();
 	}
 
-	// Disable the main capsule collision so players can walk through the corpse.
-	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	// Disable character movement to prevent interference with ragdoll
+	if (UCharacterMovementComponent* MovementComp = GetCharacterMovement())
+	{
+		MovementComp->DisableMovement();
+		MovementComp->StopMovementImmediately();
+	}
+
+	// Set the capsule to only query for visibility and ignore the pawn.
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 
 	// Populate the inventory with loot.
 	PopulateFromLootTable();
@@ -54,8 +64,20 @@ void AEnemyCharacter::OnDeath()
 	USkeletalMeshComponent* MeshComponent = GetMesh();
 	if (MeshComponent)
 	{
+		// Detach the mesh from the capsule so it can fall freely
+		MeshComponent->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+		
+		// Set collision for ragdoll physics
+		MeshComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		MeshComponent->SetCollisionProfileName(TEXT("Ragdoll"));
+		
+		// Enable physics simulation for ragdoll effect
 		MeshComponent->SetSimulatePhysics(true);
+		
+		// Override the visibility response so we can interact with the corpse
+		MeshComponent->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+		
+		UE_LOG(LogTemp, Warning, TEXT("Ragdoll setup complete for %s"), *GetName());
 	}
 	
 	// The corpse will be removed from the world after 2 minutes.

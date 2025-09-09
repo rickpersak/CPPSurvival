@@ -211,17 +211,44 @@ void ACPPSurvivalPlayerController::OnInteract()
 
 	FHitResult HitResult;
 	GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECC_Visibility);
+	
+	// Debug visualization (remove this later if not needed)
+	DrawDebugLine(GetWorld(), TraceStart, TraceEnd, FColor::Red, false, 1.0f, 0, 2.0f);
+	if (HitResult.bBlockingHit)
+	{
+		DrawDebugSphere(GetWorld(), HitResult.ImpactPoint, 10.0f, 12, FColor::Green, false, 1.0f);
+	}
 
 	if (AActor* HitActor = HitResult.GetActor())
 	{
-		UE_LOG(LogCPPSurvival, Log, TEXT("[CLIENT] Line trace HIT actor: %s"), *GetNameSafe(HitActor));
-		// Check if the actor is an enemy to deal damage
-		if (AEnemyCharacter* HitEnemy = Cast<AEnemyCharacter>(HitActor))
+		UE_LOG(LogCPPSurvival, Log, TEXT("[CLIENT] Line trace HIT actor: %s at location: %s"), *GetNameSafe(HitActor), *HitResult.ImpactPoint.ToString());
+		
+		// Check if the actor has a container component first (for dead enemies and regular containers)
+		if (UContainerComponent* Container = HitActor->FindComponentByClass<UContainerComponent>())
 		{
-			UE_LOG(LogCPPSurvival, Warning, TEXT("[CLIENT] Hit actor is an EnemyCharacter. Calling Server_DealDamage..."));
-			// Send a request to the server to deal damage.
-			// The client never applies damage directly.
-			Server_DealDamage(HitEnemy, 25.0f);
+			// If it's an enemy, check if it's dead before opening container
+			if (AEnemyCharacter* HitEnemy = Cast<AEnemyCharacter>(HitActor))
+			{
+				if (UHealthComponent* HealthComp = HitEnemy->FindComponentByClass<UHealthComponent>())
+				{
+					if (HealthComp->GetCurrentHealth() <= 0.0f)
+					{
+						UE_LOG(LogCPPSurvival, Log, TEXT("[CLIENT] Dead enemy detected. Opening loot container..."));
+						OpenContainer(Container);
+					}
+					else
+					{
+						UE_LOG(LogCPPSurvival, Warning, TEXT("[CLIENT] Living enemy detected. Dealing damage..."));
+						Server_DealDamage(HitEnemy, 25.0f);
+					}
+				}
+			}
+			else
+			{
+				// Not an enemy, just a regular container
+				UE_LOG(LogCPPSurvival, Log, TEXT("[CLIENT] Regular container detected. Opening..."));
+				OpenContainer(Container);
+			}
 		}
 		// Check if the actor is a world item to pick it up
 		else if (ACPPsurvival_WorldItem* HitItem = Cast<ACPPsurvival_WorldItem>(HitActor))
@@ -231,10 +258,11 @@ void ACPPSurvivalPlayerController::OnInteract()
 				Inventory->PickupItem(HitItem);
 			}
 		}
-		// Check if the actor has a container component to open it
-		else if (UContainerComponent* Container = HitActor->FindComponentByClass<UContainerComponent>())
+		// Fallback: if it's an enemy without a container component (shouldn't happen normally)
+		else if (AEnemyCharacter* HitEnemy = Cast<AEnemyCharacter>(HitActor))
 		{
-			OpenContainer(Container);
+			UE_LOG(LogCPPSurvival, Warning, TEXT("[CLIENT] Enemy without container component detected. Dealing damage..."));
+			Server_DealDamage(HitEnemy, 25.0f);
 		}
 	}
 	else

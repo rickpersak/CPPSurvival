@@ -21,6 +21,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Health")
 	void TakeDamage(float DamageAmount);
 
+	// Returns the current health value.
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Health")
+	float GetCurrentHealth() const { return CurrentHealth; }
+
 	// Delegate that is broadcast when health reaches zero.
 	UPROPERTY(BlueprintAssignable, Category = "Health")
 	FOnDeath OnDeath;
