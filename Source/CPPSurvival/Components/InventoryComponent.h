@@ -23,15 +23,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	bool PickupItem(ACPPsurvival_WorldItem* WorldItem);
 
-	// Drop an item from the inventory into the world
-	UFUNCTION(BlueprintCallable, Category = "Inventory")
-	void DropItem(int32 Index, int32 Quantity);
+	// Drop an item from the inventory into the world (overrides UContainerComponent)
+	virtual void DropItem(int32 Index, int32 Quantity) override;
 
 protected:
 	// Server RPCs
 	UFUNCTION(Server, Reliable)
 	void Server_PickupItem(ACPPsurvival_WorldItem* WorldItem);
 
-	UFUNCTION(Server, Reliable)
-	void Server_DropItem(int32 Index, int32 Quantity);
+	virtual void Server_DropItem_Implementation(int32 Index, int32 Quantity) override;
 };

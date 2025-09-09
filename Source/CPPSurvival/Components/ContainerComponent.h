@@ -59,6 +59,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Container")
 	void MoveItem(int32 SourceIndex, UContainerComponent* TargetContainer, int32 TargetIndex);
 
+	// Drop an item from the container into the world
+	UFUNCTION(BlueprintCallable, Category = "Container")
+	virtual void DropItem(int32 Index, int32 Quantity);
+
 	// Check if the container has the specified quantity of an item
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Container")
 	bool HasItems(UItemDataInfo* ItemData, int32 Quantity) const;
@@ -87,4 +91,7 @@ protected:
 
 	UFUNCTION(Server, Reliable)
 	void Server_MoveItem(int32 SourceIndex, UContainerComponent* TargetContainer, int32 TargetIndex);
+
+	UFUNCTION(Server, Reliable)
+	void Server_DropItem(int32 Index, int32 Quantity);
 };

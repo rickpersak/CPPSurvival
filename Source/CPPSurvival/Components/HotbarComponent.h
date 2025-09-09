@@ -19,10 +19,9 @@ public:
 	
 	virtual void BeginPlay() override;
 
-	UFUNCTION(BlueprintCallable, Category = "Hotbar")
-	void DropItem(int32 Index, int32 Quantity);
+	// Drop an item from the hotbar into the world (overrides UContainerComponent)
+	virtual void DropItem(int32 Index, int32 Quantity) override;
 	
 protected:
-	UFUNCTION(Server, Reliable)
-	void Server_DropItem(int32 Index, int32 Quantity);
+	virtual void Server_DropItem_Implementation(int32 Index, int32 Quantity) override;
 };

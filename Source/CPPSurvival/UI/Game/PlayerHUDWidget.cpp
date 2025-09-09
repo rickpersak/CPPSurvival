@@ -162,6 +162,11 @@ bool UPlayerHUDWidget::NativeOnDrop(const FGeometry& InGeometry, const FDragDrop
 				HotbarComp->DropItem(InventoryOperation->SourceSlotIndex, QuantityToDrop);
 				return true;
 			}
+			
+			// Handle base UContainerComponent drops (for world containers like chests)
+			// Check this last since derived classes should use their specialized implementations
+			ContainerComp->DropItem(InventoryOperation->SourceSlotIndex, QuantityToDrop);
+			return true;
 		}
 	}
 

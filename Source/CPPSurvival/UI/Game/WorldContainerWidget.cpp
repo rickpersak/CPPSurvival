@@ -38,7 +38,17 @@ void UWorldContainerWidget::InitializeContainer(UContainerComponent* NewContaine
 		return;
 	}
 
+	// If we're already initialized with a different container, clean up the old binding
+	if (ContainerComponent && ContainerComponent != NewContainerComponent)
+	{
+		ContainerComponent->OnContainerUpdated.RemoveAll(this);
+	}
+
 	ContainerComponent = NewContainerComponent;
+
+	// Remove any existing bindings for this widget object to prevent duplicates
+	// This is safe to call even if no bindings exist
+	ContainerComponent->OnContainerUpdated.RemoveAll(this);
 
 	// Bind our Refresh function to the container's update delegate.
 	// Now, whenever the container is modified, our UI will automatically update.
@@ -151,54 +161,45 @@ void UWorldContainerWidget::UpdateContainerSize()
 {
 	if (!ContainerComponent)
 	{
-		UE_LOG(LogCPPSurvival, Warning, TEXT("UpdateContainerSize: ContainerComponent is null"));
 		return;
 	}
 
 	const int32 ContainerCapacity = ContainerComponent->GetCapacity();
-	
-	// Calculate the number of rows needed
-	const int32 Rows = (ContainerCapacity + Columns - 1) / Columns; // Ceiling division
-	
-	// Calculate required dimensions including spacing between slots
+	const int32 Rows = (ContainerCapacity + Columns - 1) / Columns;
 	const float RequiredWidth = (Columns * SlotSize.X) + ((Columns - 1) * SlotSpacing.X) + (ContentPadding.X * 2);
-	
-	// Add header height if container name is visible
 	float RequiredHeight = (Rows * SlotSize.Y) + ((Rows - 1) * SlotSpacing.Y) + (ContentPadding.Y * 2);
+
 	if (ContainerNameText && ContainerNameText->GetVisibility() != ESlateVisibility::Collapsed)
 	{
 		RequiredHeight += HeaderHeight;
 	}
 
-	UE_LOG(LogCPPSurvival, Warning, TEXT("UpdateContainerSize: Capacity=%d, Rows=%d, Columns=%d"), 
-		ContainerCapacity, Rows, Columns);
-	UE_LOG(LogCPPSurvival, Warning, TEXT("UpdateContainerSize: Calculated size: %fx%f"), 
-		RequiredWidth, RequiredHeight);
-
-	// Method 1: Try to use SizeBox if it exists (this is the most reliable method)
 	if (ContainerSizeBox)
 	{
-		UE_LOG(LogCPPSurvival, Warning, TEXT("UpdateContainerSize: Using SizeBox to set exact size"));
-		
-		// Now that slots are fixed size, we can set the exact container size
 		ContainerSizeBox->SetWidthOverride(RequiredWidth);
 		ContainerSizeBox->SetHeightOverride(RequiredHeight);
+		UE_LOG(LogCPPSurvival, Warning, TEXT("UpdateContainerSize: Successfully found and updated ContainerSizeBox to %fx%f"), RequiredWidth, RequiredHeight);
 		
-		UE_LOG(LogCPPSurvival, Warning, TEXT("UpdateContainerSize: Set container size to %fx%f"), RequiredWidth, RequiredHeight);
-		
-		return;
+		InvalidateLayoutAndVolatility();
 	}
-
-	// Method 2: If no SizeBox, log a warning that dynamic sizing won't work properly
-	UE_LOG(LogCPPSurvival, Warning, TEXT("UpdateContainerSize: No SizeBox found! Add a SizeBox named 'ContainerSizeBox' to your widget hierarchy for proper dynamic sizing."));
-	UE_LOG(LogCPPSurvival, Warning, TEXT("UpdateContainerSize: Widget hierarchy should be: Root -> ContainerSizeBox -> ContentBorder -> [rest]"));
-
-	// Method 3: Force layout invalidation
-	InvalidateLayoutAndVolatility();
-	if (GetParent())
+	else
 	{
-		GetParent()->InvalidateLayoutAndVolatility();
+		UE_LOG(LogCPPSurvival, Error, TEXT("UpdateContainerSize: ContainerSizeBox is NULL!"));
 	}
-	
-	UE_LOG(LogCPPSurvival, Warning, TEXT("UpdateContainerSize: Completed size update"));
+}
+
+void UWorldContainerWidget::CleanupContainer()
+{
+	if (ContainerComponent)
+	{
+		ContainerComponent->OnContainerUpdated.RemoveAll(this);
+		ContainerComponent = nullptr;
+	}
+}
+
+void UWorldContainerWidget::BeginDestroy()
+{
+	// Clean up delegate bindings before destruction
+	CleanupContainer();
+	Super::BeginDestroy();
 }

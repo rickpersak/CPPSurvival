@@ -36,7 +36,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Container")
 	void UpdateContainerSize();
 
+	// Clean up delegate bindings
+	UFUNCTION(BlueprintCallable, Category = "Container")
+	void CleanupContainer();
+
 protected:
+	// Override BeginDestroy to ensure proper cleanup
+	virtual void BeginDestroy() override;
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "UI")
 	TObjectPtr<UBorder> ContentBorder;
 
