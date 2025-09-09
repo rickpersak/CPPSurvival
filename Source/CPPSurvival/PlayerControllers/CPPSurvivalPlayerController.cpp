@@ -16,6 +16,8 @@
 #include "UI/Game/CPPSurvivalHUD.h"
 #include "Components/ContainerComponent.h"
 #include "SaveSystem/SaveLoadSubsystem.h"
+#include "Characters/EnemyCharacter.h"
+#include "Components/HealthComponent.h"
 
 void ACPPSurvivalPlayerController::BeginPlay()
 {
@@ -125,6 +127,28 @@ void ACPPSurvivalPlayerController::Server_MoveItem_Implementation(UContainerComp
 	}
 }
 
+void ACPPSurvivalPlayerController::Server_DealDamage_Implementation(AEnemyCharacter* DamagedEnemy, float DamageAmount)
+{
+	UE_LOG(LogCPPSurvival, Warning, TEXT("[SERVER] Server_DealDamage_Implementation called for %s"), *GetNameSafe(DamagedEnemy));
+	if (DamagedEnemy)
+	{
+		// The server finds the health component and applies the damage.
+		if (UHealthComponent* HealthComponent = DamagedEnemy->FindComponentByClass<UHealthComponent>())
+		{
+			UE_LOG(LogCPPSurvival, Warning, TEXT("[SERVER] Found HealthComponent. Calling TakeDamage..."));
+			HealthComponent->TakeDamage(DamageAmount);
+		}
+		else
+		{
+			UE_LOG(LogCPPSurvival, Error, TEXT("[SERVER] FAILED to find HealthComponent on %s"), *GetNameSafe(DamagedEnemy));
+		}
+	}
+	else
+	{
+		UE_LOG(LogCPPSurvival, Error, TEXT("[SERVER] DamagedEnemy is NULL."));
+	}
+}
+
 void ACPPSurvivalPlayerController::OnMove(const FInputActionValue& Value)
 {
 	if (bIsInventoryOpen) return;
@@ -167,6 +191,8 @@ void ACPPSurvivalPlayerController::OnJumpCompleted()
 
 void ACPPSurvivalPlayerController::OnInteract()
 {
+	UE_LOG(LogCPPSurvival, Log, TEXT("[CLIENT] OnInteract called."));
+	
 	if (bIsInventoryOpen)
 	{
 		CloseContainer();
@@ -186,25 +212,34 @@ void ACPPSurvivalPlayerController::OnInteract()
 	FHitResult HitResult;
 	GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECC_Visibility);
 
-	if (HitResult.GetActor())
+	if (AActor* HitActor = HitResult.GetActor())
 	{
-		// Case 1: Interacting with a world item to pick it up
-		if (ACPPsurvival_WorldItem* HitItem = Cast<ACPPsurvival_WorldItem>(HitResult.GetActor()))
+		UE_LOG(LogCPPSurvival, Log, TEXT("[CLIENT] Line trace HIT actor: %s"), *GetNameSafe(HitActor));
+		// Check if the actor is an enemy to deal damage
+		if (AEnemyCharacter* HitEnemy = Cast<AEnemyCharacter>(HitActor))
+		{
+			UE_LOG(LogCPPSurvival, Warning, TEXT("[CLIENT] Hit actor is an EnemyCharacter. Calling Server_DealDamage..."));
+			// Send a request to the server to deal damage.
+			// The client never applies damage directly.
+			Server_DealDamage(HitEnemy, 25.0f);
+		}
+		// Check if the actor is a world item to pick it up
+		else if (ACPPsurvival_WorldItem* HitItem = Cast<ACPPsurvival_WorldItem>(HitActor))
 		{
 			if (UInventoryComponent* Inventory = MyCharacter->GetInventoryComponent())
 			{
 				Inventory->PickupItem(HitItem);
 			}
 		}
-		// Case 2: Interacting with an actor that has a container component (e.g., a chest)
-		else if (UContainerComponent* Container = HitResult.GetActor()->FindComponentByClass<UContainerComponent>())
+		// Check if the actor has a container component to open it
+		else if (UContainerComponent* Container = HitActor->FindComponentByClass<UContainerComponent>())
 		{
-			UE_LOG(LogCPPSurvival, Warning, TEXT("OnInteract: Found container component %s on actor %s"), 
-				*GetNameSafe(Container), *GetNameSafe(HitResult.GetActor()));
-			UE_LOG(LogCPPSurvival, Warning, TEXT("OnInteract: Container capacity: %d, Container name: %s"), 
-				Container->GetCapacity(), *Container->GetContainerName().ToString());
 			OpenContainer(Container);
 		}
+	}
+	else
+	{
+		UE_LOG(LogCPPSurvival, Log, TEXT("[CLIENT] Line trace did NOT hit anything."));
 	}
 }
 

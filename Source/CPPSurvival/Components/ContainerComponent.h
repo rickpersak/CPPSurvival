@@ -77,6 +77,10 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Container")
 	const FText& GetContainerName() const { return ContainerName; }
 
+	// Setters
+	void SetCapacity(int32 NewCapacity) { Capacity = NewCapacity; }
+	void SetContainerName(const FText& NewName) { ContainerName = NewName; }
+
 protected:
 	// Replication callbacks
 	UFUNCTION()

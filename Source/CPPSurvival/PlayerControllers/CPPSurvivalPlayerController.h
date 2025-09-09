@@ -12,6 +12,7 @@ class UInputAction;
 class UUserWidget;
 class UPlayerHUDWidget;
 class UContainerComponent;
+class AEnemyCharacter;
 
 /**
  * CPP Survival Player Controller - Handles input and UI management
@@ -34,6 +35,10 @@ public:
 	// Server RPC to move items between containers
 	UFUNCTION(Server, BlueprintCallable, Reliable)
 	void Server_MoveItem(UContainerComponent* SourceContainer, int32 SourceIndex, UContainerComponent* TargetContainer, int32 TargetIndex);
+
+	// Server RPC to deal damage to an actor.
+	UFUNCTION(Server, Reliable)
+	void Server_DealDamage(AEnemyCharacter* DamagedEnemy, float DamageAmount);
 
 protected:
 	// --- Input ---
