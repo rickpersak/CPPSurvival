@@ -1,3 +1,5 @@
+// Copyright Epic Games, Inc. All Rights Reserved.
+
 #include "CPPSurvivalPlayerController.h"
 #include "EnhancedInputSubsystems.h"
 #include "Engine/LocalPlayer.h"
@@ -112,6 +114,14 @@ void ACPPSurvivalPlayerController::OnUnPossess()
 	if (USaveLoadSubsystem* SaveLoadSubsystem = GetGameInstance()->GetSubsystem<USaveLoadSubsystem>())
 	{
 		SaveLoadSubsystem->SavePlayer(this);
+	}
+}
+
+void ACPPSurvivalPlayerController::Server_MoveItem_Implementation(UContainerComponent* SourceContainer, int32 SourceIndex, UContainerComponent* TargetContainer, int32 TargetIndex)
+{
+	if (SourceContainer && TargetContainer)
+	{
+		SourceContainer->MoveItem(SourceIndex, TargetContainer, TargetIndex);
 	}
 }
 

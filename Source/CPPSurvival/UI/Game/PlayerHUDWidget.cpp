@@ -152,6 +152,7 @@ void UPlayerHUDWidget::CloseWorldContainer()
 	if (WorldContainerWidget)
 	{
 		WorldContainerWidget->SetInventoryContentVisibility(false);
+		WorldContainerWidget->CleanupContainer(); // <-- ADD THIS LINE
 	}
 }
 

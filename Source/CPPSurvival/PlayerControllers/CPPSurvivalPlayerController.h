@@ -31,6 +31,10 @@ public:
 	virtual void OnPossess(APawn* InPawn) override;
 	virtual void OnUnPossess() override;
 
+	// Server RPC to move items between containers
+	UFUNCTION(Server, BlueprintCallable, Reliable)
+	void Server_MoveItem(UContainerComponent* SourceContainer, int32 SourceIndex, UContainerComponent* TargetContainer, int32 TargetIndex);
+
 protected:
 	// --- Input ---
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
