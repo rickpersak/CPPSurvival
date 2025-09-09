@@ -1,11 +1,11 @@
-﻿#include "UI/Inventory/InventoryGridWidget.h"
+#include "UI/Game/WorldContainerGridWidget.h"
 #include "Components/ContainerComponent.h"
 #include "UI/Inventory/InventorySlotWidget.h"
 #include "Components/UniformGridPanel.h"
 #include "Components/UniformGridSlot.h"
 #include "Data/ItemDataInfo.h"
 
-void UInventoryGridWidget::InitializeGrid(UContainerComponent* NewContainerComponent)
+void UWorldContainerGridWidget::InitializeGrid(UContainerComponent* NewContainerComponent)
 {
 	if (!NewContainerComponent || !SlotWidgetClass || !ItemGrid)
 	{
@@ -16,7 +16,7 @@ void UInventoryGridWidget::InitializeGrid(UContainerComponent* NewContainerCompo
 
 	// Bind our Refresh function to the container's update delegate.
 	// Now, whenever the container is modified, our UI will automatically update.
-	ContainerComponent->OnContainerUpdated.AddDynamic(this, &UInventoryGridWidget::Refresh);
+	ContainerComponent->OnContainerUpdated.AddDynamic(this, &UWorldContainerGridWidget::Refresh);
 
 	// Check if the optional ContainerNameText widget exists
 	if (ContainerNameText)
@@ -58,7 +58,7 @@ void UInventoryGridWidget::InitializeGrid(UContainerComponent* NewContainerCompo
 	Refresh();
 }
 
-void UInventoryGridWidget::Refresh()
+void UWorldContainerGridWidget::Refresh()
 {
 	if (!ContainerComponent || !ItemGrid)
 	{

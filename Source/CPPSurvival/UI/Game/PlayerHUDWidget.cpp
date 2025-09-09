@@ -1,6 +1,8 @@
 ﻿#include "UI/Game/PlayerHUDWidget.h"
 #include "UI/Game/InventoryContainerWidget.h"
+#include "UI/Game/WorldContainerWidget.h"
 #include "UI/Inventory/InventoryGridWidget.h"
+#include "UI/Game/WorldContainerGridWidget.h"
 #include "UI/Inventory/HotbarWidget.h"
 #include "Components/InventoryComponent.h"
 #include "Components/HotbarComponent.h"
@@ -16,14 +18,20 @@ void UPlayerHUDWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
+	// Hide both container widgets by default
 	if (InventoryContainerWidget)
 	{
 		InventoryContainerWidget->SetVisibility(ESlateVisibility::Collapsed);
+	}
+	if (WorldContainerWidget)
+	{
+		WorldContainerWidget->SetVisibility(ESlateVisibility::Collapsed);
 	}
 	
 	ACPPSurvivalCharacter* PlayerCharacter = Cast<ACPPSurvivalCharacter>(GetOwningPlayerPawn());
 	if (PlayerCharacter)
 	{
+		// --- Initialize Survival Stats ---
 		USurvivalStatsComponent* StatsComponent = PlayerCharacter->GetSurvivalStatsComponent();
 		if (StatsComponent)
 		{
@@ -34,6 +42,7 @@ void UPlayerHUDWidget::NativeConstruct()
 			UpdateThirst(StatsComponent->GetCurrentThirst(), StatsComponent->GetMaxThirst());
 		}
 		
+		// --- Initialize Player Inventory ---
 		if (InventoryContainerWidget)
 		{
 			UInventoryGridWidget* Grid = InventoryContainerWidget->GetInventoryGridWidget();
@@ -45,6 +54,7 @@ void UPlayerHUDWidget::NativeConstruct()
 			}
 		}
 		
+		// --- Initialize Hotbar ---
 		if(HotbarWidget)
 		{
 			UHotbarComponent* HotbarComponent = PlayerCharacter->GetHotbarComponent();
@@ -90,6 +100,28 @@ void UPlayerHUDWidget::SetInventoryContainerVisibility(bool bIsVisible)
 		InventoryContainerWidget->SetInventoryContentVisibility(bIsVisible);
 	}
 }
+
+void UPlayerHUDWidget::OpenWorldContainer(UContainerComponent* ContainerComponent)
+{
+	if (WorldContainerWidget && ContainerComponent)
+	{
+		UWorldContainerGridWidget* Grid = WorldContainerWidget->GetContainerGridWidget();
+		if (Grid)
+		{
+			Grid->InitializeGrid(ContainerComponent);
+			WorldContainerWidget->SetInventoryContentVisibility(true);
+		}
+	}
+}
+
+void UPlayerHUDWidget::CloseWorldContainer()
+{
+	if (WorldContainerWidget)
+	{
+		WorldContainerWidget->SetInventoryContentVisibility(false);
+	}
+}
+
 
 bool UPlayerHUDWidget::NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation)
 {

@@ -3,27 +3,28 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "Components/TextBlock.h"
-#include "InventoryGridWidget.generated.h"
+#include "WorldContainerGridWidget.generated.h"
 
 class UContainerComponent;
 class UInventorySlotWidget;
 class UUniformGridPanel;
 
 /**
- * Inventory Grid Widget - Displays a grid of inventory slots
+ * World Container Grid Widget - Displays a grid of container slots for world containers (chests, etc.)
+ * Same functionality as InventoryGridWidget but allows for different visual styling
  */
 UCLASS()
-class CPPSURVIVAL_API UInventoryGridWidget : public UUserWidget
+class CPPSURVIVAL_API UWorldContainerGridWidget : public UUserWidget
 {
 	GENERATED_BODY()
 
 public:
 	// Initialize the grid with a container component
-	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	UFUNCTION(BlueprintCallable, Category = "Container")
 	void InitializeGrid(UContainerComponent* NewContainerComponent);
 
 	// Refresh the grid display
-	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	UFUNCTION(BlueprintCallable, Category = "Container")
 	void Refresh();
 
 protected:
@@ -35,10 +36,10 @@ protected:
 	TObjectPtr<UTextBlock> ContainerNameText;
 
 	// The container component this grid displays
-	UPROPERTY(BlueprintReadOnly, Category = "Inventory")
+	UPROPERTY(BlueprintReadOnly, Category = "Container")
 	TObjectPtr<UContainerComponent> ContainerComponent;
 
-	// The widget class to use for inventory slots
+	// The widget class to use for container slots
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI")
 	TSubclassOf<UInventorySlotWidget> SlotWidgetClass;
 
@@ -48,7 +49,7 @@ protected:
 
 public:
 	// Getters
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Inventory")
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Container")
 	UContainerComponent* GetContainerComponent() const { return ContainerComponent; }
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "UI")

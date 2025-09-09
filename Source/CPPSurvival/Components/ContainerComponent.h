@@ -38,6 +38,9 @@ protected:
 	// Maximum number of slots in this container
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Container", meta = (ClampMin = "1"))
 	int32 Capacity = 20;
+	
+	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Container")
+	FText ContainerName;
 
 public:
 	// Delegate that fires when the container is updated
@@ -66,6 +69,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Container")
 	int32 GetCapacity() const { return Capacity; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Container")
+	const FText& GetContainerName() const { return ContainerName; }
 
 protected:
 	// Replication callbacks

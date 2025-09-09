@@ -1,5 +1,3 @@
-// PlayerHUDWidget.h
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -9,7 +7,9 @@
 class UProgressBar;
 class UTextBlock;
 class UInventoryContainerWidget;
+class UWorldContainerWidget;
 class UHotbarWidget;
+class UContainerComponent;
 
 UCLASS()
 class CPPSURVIVAL_API UPlayerHUDWidget : public UUserWidget
@@ -18,12 +18,28 @@ class CPPSURVIVAL_API UPlayerHUDWidget : public UUserWidget
 
 public:
 	virtual void NativeConstruct() override;
-
 	virtual bool NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation) override;
 
+	// Shows or hides the main player inventory panel
+	UFUNCTION(BlueprintCallable, Category = "UI")
+	void SetInventoryContainerVisibility(bool bIsVisible);
+
+	// Shows and initializes the world container panel
+	UFUNCTION(BlueprintCallable, Category = "UI")
+	void OpenWorldContainer(UContainerComponent* ContainerComponent);
+
+	// Hides the world container panel
+	UFUNCTION(BlueprintCallable, Category = "UI")
+	void CloseWorldContainer();
+
 protected:
+	// This is for the player's main inventory
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "UI")
 	TObjectPtr<UInventoryContainerWidget> InventoryContainerWidget;
+
+	// This is the new widget for the external container (e.g., a chest)
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "UI")
+	TObjectPtr<UWorldContainerWidget> WorldContainerWidget;
 	
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "UI")
 	TObjectPtr<UHotbarWidget> HotbarWidget;
@@ -39,10 +55,6 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "UI")
 	TObjectPtr<UTextBlock> ThirstText;
-
-public:
-	UFUNCTION(BlueprintCallable, Category = "UI")
-	void SetInventoryContainerVisibility(bool bIsVisible);
 
 protected:
 	UFUNCTION()

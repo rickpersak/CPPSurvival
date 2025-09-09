@@ -11,6 +11,7 @@ class UInputMappingContext;
 class UInputAction;
 class UUserWidget;
 class UPlayerHUDWidget;
+class UContainerComponent;
 
 /**
  * CPP Survival Player Controller - Handles input and UI management
@@ -28,14 +29,13 @@ public:
 	virtual void SetupInputComponent() override;
 
 protected:
-	// Input mapping contexts
+	// --- Input ---
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	TArray<TObjectPtr<UInputMappingContext>> DefaultMappingContexts;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	TArray<TObjectPtr<UInputMappingContext>> MobileExcludedMappingContexts;
 
-	// Input actions
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	TObjectPtr<UInputAction> JumpAction;
 
@@ -54,7 +54,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	TObjectPtr<UInputAction> ToggleInventoryAction;
 
-	// UI References
+	// --- UI ---
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI")
 	TSubclassOf<UUserWidget> MobileControlsWidgetClass;
 
@@ -64,16 +64,19 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "UI")
 	TObjectPtr<UPlayerHUDWidget> PlayerHUD;
 
-	// Interaction settings
+	// --- Interaction ---
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interaction")
 	float InteractionDistance = 500.0f;
 
-	// Inventory state
-	UPROPERTY(BlueprintReadOnly, Category = "Inventory")
+	// --- State ---
+	UPROPERTY(BlueprintReadOnly, Category = "State")
 	bool bIsInventoryOpen = false;
 
+	UPROPERTY()
+	TObjectPtr<UContainerComponent> CurrentOpenContainer;
+	
 public:
-	// Input callback functions
+	// Input callbacks
 	void OnMove(const FInputActionValue& Value);
 	void OnLook(const FInputActionValue& Value);
 	void OnJumpStarted();
@@ -84,4 +87,9 @@ public:
 	// Getters
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "UI")
 	bool IsInventoryOpen() const { return bIsInventoryOpen; }
+
+protected:
+	// UI Management Functions
+	void OpenContainer(UContainerComponent* ContainerToOpen);
+	void CloseContainer();
 };
