@@ -18,6 +18,8 @@
 #include "SaveSystem/SaveLoadSubsystem.h"
 #include "Characters/EnemyCharacter.h"
 #include "Components/HealthComponent.h"
+#include "CollisionQueryParams.h"
+#include "Kismet/KismetSystemLibrary.h"
 
 void ACPPSurvivalPlayerController::BeginPlay()
 {
@@ -210,18 +212,25 @@ void ACPPSurvivalPlayerController::OnInteract()
 	const FVector TraceEnd = TraceStart + (CameraRotation.Vector() * InteractionDistance);
 
 	FHitResult HitResult;
-	GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECC_Visibility);
+	TArray<AActor*> ActorsToIgnore;
+	ActorsToIgnore.Add(MyCharacter);
 	
-	// Debug visualization (remove this later if not needed)
-	DrawDebugLine(GetWorld(), TraceStart, TraceEnd, FColor::Red, false, 1.0f, 0, 2.0f);
-	if (HitResult.bBlockingHit)
-	{
-		DrawDebugSphere(GetWorld(), HitResult.ImpactPoint, 10.0f, 12, FColor::Green, false, 1.0f);
-	}
+	UKismetSystemLibrary::SphereTraceSingle(
+		this,
+		TraceStart,
+		TraceEnd,
+		InteractionSphereRadius,
+		UEngineTypes::ConvertToTraceType(ECC_Visibility),
+		false,
+		ActorsToIgnore,
+		EDrawDebugTrace::ForDuration,
+		HitResult,
+		true
+	);
 
 	if (AActor* HitActor = HitResult.GetActor())
 	{
-		UE_LOG(LogCPPSurvival, Log, TEXT("[CLIENT] Line trace HIT actor: %s at location: %s"), *GetNameSafe(HitActor), *HitResult.ImpactPoint.ToString());
+		UE_LOG(LogCPPSurvival, Log, TEXT("[CLIENT] Sphere trace HIT actor: %s at location: %s"), *GetNameSafe(HitActor), *HitResult.ImpactPoint.ToString());
 		
 		// Check if the actor has a container component first (for dead enemies and regular containers)
 		if (UContainerComponent* Container = HitActor->FindComponentByClass<UContainerComponent>())
@@ -267,7 +276,7 @@ void ACPPSurvivalPlayerController::OnInteract()
 	}
 	else
 	{
-		UE_LOG(LogCPPSurvival, Log, TEXT("[CLIENT] Line trace did NOT hit anything."));
+		UE_LOG(LogCPPSurvival, Log, TEXT("[CLIENT] Sphere trace did NOT hit anything."));
 	}
 }
 

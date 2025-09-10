@@ -83,6 +83,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interaction")
 	float InteractionDistance = 500.0f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interaction")
+	float InteractionSphereRadius = 50.0f;
+
 	// --- State ---
 	UPROPERTY(BlueprintReadOnly, Category = "State")
 	bool bIsInventoryOpen = false;
