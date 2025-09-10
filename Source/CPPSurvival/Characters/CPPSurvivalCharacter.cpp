@@ -129,3 +129,23 @@ void ACPPSurvivalCharacter::OnRep_IsSprinting()
 {
 	GetCharacterMovement()->MaxWalkSpeed = bIsSprinting ? SprintSpeed : WalkSpeed;
 }
+
+void ACPPSurvivalCharacter::SetSprintStateForUI(bool bNewSprintState)
+{
+	if (HasAuthority())
+	{
+		bIsSprinting = bNewSprintState;
+		// Don't call OnRep_IsSprinting() since Blueprint handles movement
+		// Just replicate the value for stamina tracking
+	}
+	else
+	{
+		// Call server RPC if needed
+		Server_SetSprintStateForUI(bNewSprintState);
+	}
+}
+
+void ACPPSurvivalCharacter::Server_SetSprintStateForUI_Implementation(bool bNewSprintState)
+{
+	SetSprintStateForUI(bNewSprintState);
+}

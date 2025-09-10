@@ -92,6 +92,11 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Movement")
 	bool IsSprinting() const { return bIsSprinting; }
 
+	UFUNCTION(BlueprintCallable, Category = "Movement")
+	void SetSprintStateForUI(bool bNewSprintState);
+
+	UFUNCTION(Server, Reliable)
+	void Server_SetSprintStateForUI(bool bNewSprintState);
 
 	// Getters for components
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Components")
