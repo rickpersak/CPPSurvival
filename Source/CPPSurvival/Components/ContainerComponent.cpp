@@ -153,18 +153,51 @@ void UContainerComponent::MoveItem(int32 SourceIndex, UContainerComponent* Targe
 			return;
 		}
 
-		// Log what we're swapping
-		FString SourceItemName = Items[SourceIndex].ItemData ? Items[SourceIndex].ItemData->DisplayName.ToString() : TEXT("Empty");
-		FString TargetItemName = TargetContainer->Items[TargetIndex].ItemData ? TargetContainer->Items[TargetIndex].ItemData->DisplayName.ToString() : TEXT("Empty");
+		// Get references to source and target items for easier access
+		FContainerItem& SourceItem = Items[SourceIndex];
+		FContainerItem& TargetItem = TargetContainer->Items[TargetIndex];
+
+		// Log what we're working with
+		FString SourceItemName = SourceItem.ItemData ? SourceItem.ItemData->DisplayName.ToString() : TEXT("Empty");
+		FString TargetItemName = TargetItem.ItemData ? TargetItem.ItemData->DisplayName.ToString() : TEXT("Empty");
 		
-		UE_LOG(LogCPPSurvival, Warning, TEXT("MoveItem: Swapping '%s' (index %d) with '%s' (index %d)"), 
-			*SourceItemName, SourceIndex, *TargetItemName, TargetIndex);
+		UE_LOG(LogCPPSurvival, Warning, TEXT("MoveItem: Processing '%s' (qty: %d, index %d) to '%s' (qty: %d, index %d)"), 
+			*SourceItemName, SourceItem.Quantity, SourceIndex, *TargetItemName, TargetItem.Quantity, TargetIndex);
 
-		// Simply swap the item structs. FContainerItem is small, so this is efficient.
-		// This logic handles moving within the same inventory and moving between two different inventories.
-		Swap(Items[SourceIndex], TargetContainer->Items[TargetIndex]);
+		// Check if we can stack the items (same type, both have valid data, and combined quantity fits in max stack)
+		bool bCanStack = false;
+		if (SourceItem.ItemData && TargetItem.ItemData && 
+			SourceItem.ItemData == TargetItem.ItemData && 
+			!SourceItem.IsEmpty() && !TargetItem.IsEmpty())
+		{
+			const int32 CombinedQuantity = SourceItem.Quantity + TargetItem.Quantity;
+			if (CombinedQuantity <= SourceItem.ItemData->MaxStackSize)
+			{
+				bCanStack = true;
+				UE_LOG(LogCPPSurvival, Warning, TEXT("MoveItem: Items can be stacked. Combined quantity: %d, Max stack: %d"), 
+					CombinedQuantity, SourceItem.ItemData->MaxStackSize);
+			}
+			else
+			{
+				UE_LOG(LogCPPSurvival, Warning, TEXT("MoveItem: Items are same type but can't be fully stacked. Combined quantity: %d, Max stack: %d"), 
+					CombinedQuantity, SourceItem.ItemData->MaxStackSize);
+			}
+		}
 
-		UE_LOG(LogCPPSurvival, Warning, TEXT("MoveItem: Swap completed successfully"));
+		if (bCanStack)
+		{
+			// Combine the stacks - add source quantity to target and clear source
+			TargetItem.Quantity += SourceItem.Quantity;
+			SourceItem = FContainerItem(); // Reset to empty
+			
+			UE_LOG(LogCPPSurvival, Warning, TEXT("MoveItem: Items stacked successfully. New target quantity: %d"), TargetItem.Quantity);
+		}
+		else
+		{
+			// Can't stack, so swap the items as before
+			UE_LOG(LogCPPSurvival, Warning, TEXT("MoveItem: Swapping items (no stacking possible)"));
+			Swap(SourceItem, TargetItem);
+		}
 
 		// Broadcast updates for both containers so their UIs refresh.
 		OnContainerUpdated.Broadcast();
