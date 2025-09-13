@@ -3,6 +3,9 @@
 #include "Components/TextBlock.h"
 #include "Components/ContainerComponent.h"
 #include "Data/ItemDataInfo.h"
+#include "PlayerControllers/CPPSurvivalPlayerController.h"
+#include "Characters/CPPSurvivalCharacter.h"
+#include "Framework/Application/SlateApplication.h"
 
 void UInventorySlotWidget::Refresh(const FContainerItem& ItemData)
 {
@@ -49,4 +52,27 @@ void UInventorySlotWidget::Refresh(const FContainerItem& ItemData)
 			}
 		}
 	}
+}
+
+FReply UInventorySlotWidget::NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
+{
+	Super::NativeOnMouseButtonDown(InGeometry, InMouseEvent);
+
+	// Handle shift-clicking for quick transfer
+	if (InMouseEvent.GetEffectingButton() == EKeys::LeftMouseButton && FSlateApplication::Get().GetModifierKeys().IsShiftDown())
+	{
+		// Only handle shift-click if there's actually an item in this slot
+		if (!CurrentItem.IsEmpty() && ParentContainer && CurrentItem.ItemData)
+		{
+			ACPPSurvivalPlayerController* PlayerController = Cast<ACPPSurvivalPlayerController>(GetOwningPlayer());
+			if (PlayerController)
+			{
+				PlayerController->Server_ShiftClickItem(ParentContainer, SlotIndex);
+				return FReply::Handled(); // Only consume the event if we actually handled it
+			}
+		}
+	}
+
+	// Allow normal mouse events to proceed (for drag-and-drop)
+	return FReply::Unhandled();
 }

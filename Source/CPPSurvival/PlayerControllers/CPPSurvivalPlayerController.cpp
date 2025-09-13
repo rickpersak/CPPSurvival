@@ -129,6 +129,34 @@ void ACPPSurvivalPlayerController::Server_MoveItem_Implementation(UContainerComp
 	}
 }
 
+void ACPPSurvivalPlayerController::Server_ShiftClickItem_Implementation(UContainerComponent* SourceContainer, int32 SourceIndex)
+{
+	if (!SourceContainer) return;
+
+	ACPPSurvivalCharacter* MyCharacter = GetPawn<ACPPSurvivalCharacter>();
+	if (!MyCharacter) return;
+
+	UInventoryComponent* PlayerInventory = MyCharacter->GetInventoryComponent();
+	if (!PlayerInventory) return;
+	
+	// If shift-clicking from player inventory, move to world container, and vice-versa
+	if (SourceContainer == PlayerInventory)
+	{
+		// Moving from player inventory to open container
+		if (CurrentOpenContainer && CurrentOpenContainer != PlayerInventory)
+		{
+			bool bSuccess = SourceContainer->MoveItemToFirstAvailableSlot(SourceIndex, CurrentOpenContainer);
+			UE_LOG(LogCPPSurvival, Warning, TEXT("Shift-click from player inventory to container: %s"), bSuccess ? TEXT("Success") : TEXT("Failed"));
+		}
+	}
+	else
+	{
+		// Moving from container to player inventory
+		bool bSuccess = SourceContainer->MoveItemToFirstAvailableSlot(SourceIndex, PlayerInventory);
+		UE_LOG(LogCPPSurvival, Warning, TEXT("Shift-click from container to player inventory: %s"), bSuccess ? TEXT("Success") : TEXT("Failed"));
+	}
+}
+
 void ACPPSurvivalPlayerController::Server_DealDamage_Implementation(AEnemyCharacter* DamagedEnemy, float DamageAmount)
 {
 	UE_LOG(LogCPPSurvival, Warning, TEXT("[SERVER] Server_DealDamage_Implementation called for %s"), *GetNameSafe(DamagedEnemy));

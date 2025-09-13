@@ -52,6 +52,8 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Inventory")
 	FContainerItem CurrentItem;
 
+	virtual FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
+
 public:
 	// Getters
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Inventory")

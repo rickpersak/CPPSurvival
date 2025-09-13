@@ -227,6 +227,83 @@ void UContainerComponent::Server_MoveItem_Implementation(int32 SourceIndex, UCon
 	MoveItem(SourceIndex, TargetContainer, TargetIndex);
 }
 
+bool UContainerComponent::MoveItemToFirstAvailableSlot(int32 SourceIndex, UContainerComponent* TargetContainer)
+{
+	if (GetOwner()->HasAuthority())
+	{
+		UE_LOG(LogCPPSurvival, Warning, TEXT("MoveItemToFirstAvailableSlot called: SourceIndex=%d, TargetContainer=%s"), 
+			SourceIndex, TargetContainer ? TEXT("Valid") : TEXT("NULL"));
+
+		// Basic validation
+		if (!TargetContainer || !Items.IsValidIndex(SourceIndex) || Items[SourceIndex].IsEmpty())
+		{
+			UE_LOG(LogCPPSurvival, Error, TEXT("MoveItemToFirstAvailableSlot: Invalid parameters"));
+			return false;
+		}
+
+		const FContainerItem& SourceItem = Items[SourceIndex];
+		
+		// Find the first available slot in the target container
+		int32 TargetIndex = TargetContainer->FindFirstAvailableSlot(SourceItem.ItemData, SourceItem.Quantity);
+		
+		if (TargetIndex != -1)
+		{
+			UE_LOG(LogCPPSurvival, Warning, TEXT("MoveItemToFirstAvailableSlot: Found available slot at index %d"), TargetIndex);
+			MoveItem(SourceIndex, TargetContainer, TargetIndex);
+			return true;
+		}
+		else
+		{
+			UE_LOG(LogCPPSurvival, Warning, TEXT("MoveItemToFirstAvailableSlot: No available slot found in target container"));
+			return false;
+		}
+	}
+	else
+	{
+		UE_LOG(LogCPPSurvival, Warning, TEXT("MoveItemToFirstAvailableSlot: Running on client, would need RPC implementation"));
+		// For now, just return false on client. You could add an RPC if needed.
+		return false;
+	}
+}
+
+int32 UContainerComponent::FindFirstAvailableSlot(UItemDataInfo* ItemData, int32 Quantity) const
+{
+	if (!ItemData || Quantity <= 0)
+	{
+		return -1;
+	}
+
+	// First pass: Try to find existing stacks that can accommodate some/all of the quantity
+	for (int32 i = 0; i < Items.Num(); ++i)
+	{
+		const FContainerItem& Item = Items[i];
+		if (Item.ItemData == ItemData && Item.Quantity < ItemData->MaxStackSize)
+		{
+			// This slot has the same item and can accept more
+			const int32 CanAdd = ItemData->MaxStackSize - Item.Quantity;
+			if (CanAdd >= Quantity)
+			{
+				// This slot can accept the full quantity
+				return i;
+			}
+			// Note: If we wanted to support partial stacking for shift-click,
+			// we'd return this slot even if CanAdd < Quantity
+		}
+	}
+
+	// Second pass: Find the first empty slot
+	for (int32 i = 0; i < Items.Num(); ++i)
+	{
+		if (Items[i].IsEmpty())
+		{
+			return i;
+		}
+	}
+
+	// No available slot found
+	return -1;
+}
+
 bool UContainerComponent::HasItems(UItemDataInfo* ItemData, int32 Quantity) const
 {
 	if (!ItemData) return false;

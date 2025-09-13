@@ -59,6 +59,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Container")
 	void MoveItem(int32 SourceIndex, UContainerComponent* TargetContainer, int32 TargetIndex);
 
+	// Move an item to the first available slot in the target container (for shift-clicking)
+	UFUNCTION(BlueprintCallable, Category = "Container")
+	bool MoveItemToFirstAvailableSlot(int32 SourceIndex, UContainerComponent* TargetContainer);
+
+	// Find the first available slot that can accept the given item (returns -1 if none found)
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Container")
+	int32 FindFirstAvailableSlot(UItemDataInfo* ItemData, int32 Quantity) const;
+
 	// Drop an item from the container into the world
 	UFUNCTION(BlueprintCallable, Category = "Container")
 	virtual void DropItem(int32 Index, int32 Quantity);

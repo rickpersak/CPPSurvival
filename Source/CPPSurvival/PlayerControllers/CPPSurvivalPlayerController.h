@@ -36,6 +36,10 @@ public:
 	UFUNCTION(Server, BlueprintCallable, Reliable)
 	void Server_MoveItem(UContainerComponent* SourceContainer, int32 SourceIndex, UContainerComponent* TargetContainer, int32 TargetIndex);
 
+	// Server RPC to handle shift-clicking items between containers
+	UFUNCTION(Server, Reliable)
+	void Server_ShiftClickItem(UContainerComponent* SourceContainer, int32 SourceIndex);
+
 	// Server RPC to deal damage to an actor.
 	UFUNCTION(Server, Reliable)
 	void Server_DealDamage(AEnemyCharacter* DamagedEnemy, float DamageAmount);
