@@ -9,6 +9,7 @@
 #include "Items/WorldItemBase.h"
 #include "Components/InventoryComponent.h"
 #include "Characters/CPPSurvivalCharacter.h"
+#include "Interfaces/InteractInterface.h"
 #include "Widgets/Input/SVirtualJoystick.h"
 #include "EnhancedInputComponent.h"
 #include "InputActionValue.h"
@@ -295,7 +296,12 @@ void ACPPSurvivalPlayerController::OnInteract()
 				Inventory->PickupItem(HitItem);
 			}
 		}
-		// Fallback: if it's an enemy without a container component (shouldn't happen normally)
+		else if (HitActor->GetClass()->ImplementsInterface(UInteractInterface::StaticClass()))
+		{
+			UE_LOG(LogCPPSurvival, Log, TEXT("[CLIENT] Interactable actor detected. Calling OnInteract..."));
+			IInteractInterface::Execute_OnInteract(HitActor, MyCharacter);
+		}
+		
 		else if (AEnemyCharacter* HitEnemy = Cast<AEnemyCharacter>(HitActor))
 		{
 			UE_LOG(LogCPPSurvival, Warning, TEXT("[CLIENT] Enemy without container component detected. Dealing damage..."));

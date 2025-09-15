@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
 #include "InputActionValue.h"
+#include "Interfaces/InteractInterface.h"
 #include "CPPSurvivalPlayerController.generated.h"
 
 class UInputMappingContext;
