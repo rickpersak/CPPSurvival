@@ -241,28 +241,67 @@ bool UContainerComponent::MoveItemToFirstAvailableSlot(int32 SourceIndex, UConta
 			return false;
 		}
 
-		const FContainerItem& SourceItem = Items[SourceIndex];
+		FContainerItem& SourceItem = Items[SourceIndex];
+		const int32 OriginalQuantity = SourceItem.Quantity;
+		int32 RemainingQuantity = SourceItem.Quantity;
 		
-		// Find the first available slot in the target container
-		int32 TargetIndex = TargetContainer->FindFirstAvailableSlot(SourceItem.ItemData, SourceItem.Quantity);
-		
-		if (TargetIndex != -1)
+		// Try to stack with existing items first
+		for (int32 i = 0; i < TargetContainer->Items.Num() && RemainingQuantity > 0; ++i)
 		{
-			UE_LOG(LogCPPSurvival, Warning, TEXT("MoveItemToFirstAvailableSlot: Found available slot at index %d"), TargetIndex);
-			MoveItem(SourceIndex, TargetContainer, TargetIndex);
-			return true;
+			FContainerItem& TargetItem = TargetContainer->Items[i];
+			if (TargetItem.ItemData == SourceItem.ItemData && TargetItem.Quantity < SourceItem.ItemData->MaxStackSize)
+			{
+				const int32 CanAdd = FMath::Min(RemainingQuantity, SourceItem.ItemData->MaxStackSize - TargetItem.Quantity);
+				TargetItem.Quantity += CanAdd;
+				RemainingQuantity -= CanAdd;
+				
+				UE_LOG(LogCPPSurvival, Warning, TEXT("MoveItemToFirstAvailableSlot: Stacked %d items at index %d"), CanAdd, i);
+			}
+		}
+		
+		// If there's still remaining quantity, find empty slots
+		for (int32 i = 0; i < TargetContainer->Items.Num() && RemainingQuantity > 0; ++i)
+		{
+			FContainerItem& TargetItem = TargetContainer->Items[i];
+			if (TargetItem.IsEmpty())
+			{
+				const int32 AddAmount = FMath::Min(RemainingQuantity, SourceItem.ItemData->MaxStackSize);
+				TargetItem.ItemData = SourceItem.ItemData;
+				TargetItem.Quantity = AddAmount;
+				RemainingQuantity -= AddAmount;
+				
+				UE_LOG(LogCPPSurvival, Warning, TEXT("MoveItemToFirstAvailableSlot: Created new stack with %d items at index %d"), AddAmount, i);
+			}
+		}
+		
+		// Update source item
+		if (RemainingQuantity == 0)
+		{
+			// All items were moved
+			SourceItem = FContainerItem(); // Reset to empty
+			UE_LOG(LogCPPSurvival, Warning, TEXT("MoveItemToFirstAvailableSlot: All items moved successfully"));
 		}
 		else
 		{
-			UE_LOG(LogCPPSurvival, Warning, TEXT("MoveItemToFirstAvailableSlot: No available slot found in target container"));
-			return false;
+			// Some items remain
+			SourceItem.Quantity = RemainingQuantity;
+			UE_LOG(LogCPPSurvival, Warning, TEXT("MoveItemToFirstAvailableSlot: %d items remain in source slot"), RemainingQuantity);
 		}
+		
+		// Broadcast updates for both containers
+		OnContainerUpdated.Broadcast();
+		if (this != TargetContainer)
+		{
+			TargetContainer->OnContainerUpdated.Broadcast();
+		}
+		
+		return RemainingQuantity < OriginalQuantity; // Return true if any items were moved
 	}
 	else
 	{
-		UE_LOG(LogCPPSurvival, Warning, TEXT("MoveItemToFirstAvailableSlot: Running on client, would need RPC implementation"));
-		// For now, just return false on client. You could add an RPC if needed.
-		return false;
+		UE_LOG(LogCPPSurvival, Warning, TEXT("MoveItemToFirstAvailableSlot: Running on client, sending RPC to server"));
+		Server_MoveItemToFirstAvailableSlot(SourceIndex, TargetContainer);
+		return false; // Client can't know the result immediately
 	}
 }
 
@@ -355,6 +394,11 @@ void UContainerComponent::DropItem(int32 Index, int32 Quantity)
 void UContainerComponent::Server_DropItem_Implementation(int32 Index, int32 Quantity)
 {
 	DropItem(Index, Quantity);
+}
+
+void UContainerComponent::Server_MoveItemToFirstAvailableSlot_Implementation(int32 SourceIndex, UContainerComponent* TargetContainer)
+{
+	MoveItemToFirstAvailableSlot(SourceIndex, TargetContainer);
 }
 
 bool UContainerComponent::ReplicateSubobjects(UActorChannel* Channel, FOutBunch* Bunch, FReplicationFlags* RepFlags)

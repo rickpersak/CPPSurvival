@@ -106,4 +106,7 @@ protected:
 
 	UFUNCTION(Server, Reliable)
 	void Server_DropItem(int32 Index, int32 Quantity);
+
+	UFUNCTION(Server, Reliable)
+	void Server_MoveItemToFirstAvailableSlot(int32 SourceIndex, UContainerComponent* TargetContainer);
 };

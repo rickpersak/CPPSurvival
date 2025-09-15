@@ -52,8 +52,6 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Inventory")
 	FContainerItem CurrentItem;
 
-	virtual FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
-
 public:
 	// Getters
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Inventory")
@@ -64,4 +62,25 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Inventory")
 	const FContainerItem& GetCurrentItem() const { return CurrentItem; }
+
+protected:
+	// Mouse event overrides for drag and drop functionality
+	virtual FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
+	virtual void NativeOnDragDetected(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent, UDragDropOperation*& OutOperation) override;
+	virtual bool NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation) override;
+
+private:
+	// Helper function to handle shift-click functionality
+	void HandleShiftClick();
+
+	// Helper function to create drag operation
+	UDragDropOperation* CreateDragDropOperation();
+
+	// Size of the drag icon in pixels
+	UPROPERTY(EditAnywhere, Category = "Drag Drop", meta = (ClampMin = "16.0", ClampMax = "256.0"))
+	FVector2D DragIconSize = FVector2D(64.0f, 64.0f);
+
+	// Scale multiplier for the drag visual (1.0 = same size as slot, 1.2 = 20% larger)
+	UPROPERTY(EditAnywhere, Category = "Drag Drop", meta = (ClampMin = "0.5", ClampMax = "3.0"))
+	float DragVisualScale = 1.2f;
 };

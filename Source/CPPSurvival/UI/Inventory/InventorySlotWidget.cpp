@@ -1,11 +1,16 @@
 ﻿#include "UI/Inventory/InventorySlotWidget.h"
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
+#include "Components/SizeBox.h"
 #include "Components/ContainerComponent.h"
 #include "Data/ItemDataInfo.h"
 #include "PlayerControllers/CPPSurvivalPlayerController.h"
 #include "Characters/CPPSurvivalCharacter.h"
 #include "Framework/Application/SlateApplication.h"
+#include "UI/Inventory/InventoryDragDropOperation.h"
+#include "Blueprint/WidgetBlueprintLibrary.h"
+#include "Engine/World.h"
+#include "Blueprint/UserWidget.h"
 
 void UInventorySlotWidget::Refresh(const FContainerItem& ItemData)
 {
@@ -56,23 +61,113 @@ void UInventorySlotWidget::Refresh(const FContainerItem& ItemData)
 
 FReply UInventorySlotWidget::NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
 {
-	Super::NativeOnMouseButtonDown(InGeometry, InMouseEvent);
-
-	// Handle shift-clicking for quick transfer
-	if (InMouseEvent.GetEffectingButton() == EKeys::LeftMouseButton && FSlateApplication::Get().GetModifierKeys().IsShiftDown())
+	// Handle shift-click for moving entire stacks
+	if (InMouseEvent.IsShiftDown() && InMouseEvent.GetEffectingButton() == EKeys::LeftMouseButton)
 	{
-		// Only handle shift-click if there's actually an item in this slot
-		if (!CurrentItem.IsEmpty() && ParentContainer && CurrentItem.ItemData)
+		HandleShiftClick();
+		return FReply::Handled();
+	}
+
+	// Handle left-click drag detection
+	if (InMouseEvent.GetEffectingButton() == EKeys::LeftMouseButton && !CurrentItem.IsEmpty())
+	{
+		return FReply::Handled().DetectDrag(TakeWidget(), EKeys::LeftMouseButton);
+	}
+
+	return FReply::Unhandled();
+}
+
+void UInventorySlotWidget::NativeOnDragDetected(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent, UDragDropOperation*& OutOperation)
+{
+	Super::NativeOnDragDetected(InGeometry, InMouseEvent, OutOperation);
+
+	if (!CurrentItem.IsEmpty() && ParentContainer)
+	{
+		OutOperation = CreateDragDropOperation();
+	}
+}
+
+bool UInventorySlotWidget::NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation)
+{
+	Super::NativeOnDrop(InGeometry, InDragDropEvent, InOperation);
+
+	if (UInventoryDragDropOperation* InventoryOperation = Cast<UInventoryDragDropOperation>(InOperation))
+	{
+		// Don't allow dropping on the same slot
+		if (InventoryOperation->SourceContainer == ParentContainer && InventoryOperation->SourceSlotIndex == SlotIndex)
 		{
-			ACPPSurvivalPlayerController* PlayerController = Cast<ACPPSurvivalPlayerController>(GetOwningPlayer());
-			if (PlayerController)
-			{
-				PlayerController->Server_ShiftClickItem(ParentContainer, SlotIndex);
-				return FReply::Handled(); // Only consume the event if we actually handled it
-			}
+			return false;
+		}
+
+		// Get the player controller for the RPC call
+		if (ACPPSurvivalPlayerController* PlayerController = Cast<ACPPSurvivalPlayerController>(GetOwningPlayer()))
+		{
+			PlayerController->Server_MoveItem(
+				InventoryOperation->SourceContainer, 
+				InventoryOperation->SourceSlotIndex, 
+				ParentContainer, 
+				SlotIndex
+			);
+			return true;
 		}
 	}
 
-	// Allow normal mouse events to proceed (for drag-and-drop)
-	return FReply::Unhandled();
+	return false;
+}
+
+void UInventorySlotWidget::HandleShiftClick()
+{
+	if (!ParentContainer || CurrentItem.IsEmpty())
+	{
+		return;
+	}
+
+	// Get the player controller for the RPC call
+	if (ACPPSurvivalPlayerController* PlayerController = Cast<ACPPSurvivalPlayerController>(GetOwningPlayer()))
+	{
+		PlayerController->Server_ShiftClickItem(ParentContainer, SlotIndex);
+	}
+}
+
+UDragDropOperation* UInventorySlotWidget::CreateDragDropOperation()
+{
+	UInventoryDragDropOperation* DragOperation = NewObject<UInventoryDragDropOperation>();
+	if (DragOperation)
+	{
+		DragOperation->SourceContainer = ParentContainer;
+		DragOperation->SourceSlotIndex = SlotIndex;
+		DragOperation->SourceSlotWidget = this;
+		
+		if (CurrentItem.ItemData)
+		{
+			DragOperation->DraggedItemName = CurrentItem.ItemData->DisplayName.ToString();
+		}
+
+		// Always create a simple item icon drag visual
+		if (CurrentItem.ItemData && CurrentItem.ItemData->Icon)
+		{
+			// Create a SizeBox to control the dimensions of the drag visual
+			USizeBox* SizeBox = NewObject<USizeBox>(this);
+			if (SizeBox)
+			{
+				SizeBox->SetWidthOverride(DragIconSize.X * DragVisualScale);
+				SizeBox->SetHeightOverride(DragIconSize.Y * DragVisualScale);
+
+				// Create the image widget and add it to the SizeBox
+				UImage* DragImage = NewObject<UImage>(SizeBox);
+				if (DragImage)
+				{
+					DragImage->SetBrushFromTexture(CurrentItem.ItemData->Icon);
+					SizeBox->AddChild(DragImage);
+				}
+
+				// Use the SizeBox as the drag visual
+				DragOperation->DefaultDragVisual = SizeBox;
+			}
+		}
+
+		DragOperation->Pivot = EDragPivot::MouseDown;
+	}
+
+	return DragOperation;
 }
